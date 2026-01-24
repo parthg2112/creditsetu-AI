@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, vector, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, vector, jsonb, integer } from "drizzle-orm/pg-core";
 
 export const loans = pgTable("loans", {
     id: serial("id").primaryKey(),
@@ -9,10 +9,19 @@ export const loans = pgTable("loans", {
     createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const documents = pgTable("documents", {
+    id: serial("id").primaryKey(),
+    loanId: integer("loan_id").references(() => loans.id),
+    name: text("name").notNull(),
+    storagePath: text("storage_path").notNull(),
+    status: text("status").default("uploading"), // uploading, processing, completed, failed
+    createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const documentEmbeddings = pgTable("document_embeddings", {
     id: serial("id").primaryKey(),
-    loanId: serial("loan_id").references(() => loans.id),
+    documentId: integer("document_id").references(() => documents.id),
     content: text("content"),
-    embedding: vector("embedding", { dimensions: 1536 }), // OpenAI standard
+    embedding: vector("embedding", { dimensions: 768 }), // Gemini text-embedding-004
     metadata: jsonb("metadata"),
 });

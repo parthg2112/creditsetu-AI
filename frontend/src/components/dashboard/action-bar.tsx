@@ -13,8 +13,8 @@ interface ActionBarProps {
 
 export function ActionBar({ canSubmit, onStartAudit }: ActionBarProps) {
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/50 bg-background/80 px-6 py-4 backdrop-blur-md md:pl-72">
-            <div className="mx-auto flex max-w-5xl items-center justify-between">
+        <div className="fixed bottom-0 left-0 right-0 z-20 border-t border-border/50 bg-background/80 backdrop-blur-md md:left-64 md:h-[92px]">
+            <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-6">
                 <p className="text-sm text-muted-foreground hidden sm:block">
                     {canSubmit ? "Ready to analyze documents" : "Please upload required documents to proceed"}
                 </p>

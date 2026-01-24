@@ -1,6 +1,11 @@
 fastapi
 uvicorn
 llama-index
+llama-index-core
 llama-parse
 pydantic
 supabase
+google-generativeai
+python-dotenv
+python-multipart
+
