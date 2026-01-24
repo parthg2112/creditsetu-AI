@@ -1,41 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { UploadZone } from "@/components/dashboard/upload-zone";
 import { ChecklistSidebar } from "@/components/dashboard/checklist-sidebar";
-import { ActionBar } from "@/components/dashboard/action-bar";
-
 import { useRouter } from "next/navigation";
-import { ProcessingScreen } from "@/components/dashboard/processing-screen";
 import { toast } from "sonner";
 
 export default function DocumentsPage() {
     const [files, setFiles] = useState<File[]>([]);
-    const [isProcessing, setIsProcessing] = useState(false);
     const router = useRouter();
 
-    const handleStartAudit = () => {
-        setIsProcessing(true);
-    };
+    // Called when backend processing completes (via Supabase Realtime)
+    const handleProcessingComplete = useCallback((loanId: number, healthScore: string) => {
+        console.log("🎉 Processing complete!", { loanId, healthScore });
 
-    const handleProcessingComplete = () => {
-        setIsProcessing(false);
-        toast.success("Audit complete! Redirecting to results...");
-        router.push("/dashboard/audit");
-    };
+        // Show success toast with health score
+        toast.success(`Analysis Complete!`, {
+            description: `Your Health Score: ${healthScore}/100. Redirecting to results...`,
+            duration: 3000
+        });
+
+        // Redirect to audit page after a brief delay
+        setTimeout(() => {
+            router.push("/dashboard/audit");
+        }, 1500);
+    }, [router]);
 
     return (
         <div className="pb-24">
-            {isProcessing && <ProcessingScreen onComplete={handleProcessingComplete} />}
-
             <div className="space-y-6">
                 <div>
                     <h2 className="font-serif text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                         Let's build your financial profile.
                     </h2>
                     <p className="mt-2 text-lg text-muted-foreground">
-                        Securely upload your required documents to start the audit.
+                        Securely upload your required documents. AI analysis starts automatically.
                     </p>
                 </div>
 
@@ -48,6 +48,7 @@ export default function DocumentsPage() {
                         <UploadZone
                             onFilesChanged={setFiles}
                             files={files}
+                            onProcessingComplete={handleProcessingComplete}
                         />
                     </div>
                     <div className="lg:col-span-1">
@@ -55,8 +56,6 @@ export default function DocumentsPage() {
                     </div>
                 </div>
             </div>
-
-            <ActionBar canSubmit={files.length > 0} onStartAudit={handleStartAudit} />
         </div>
     );
 }
