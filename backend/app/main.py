@@ -326,15 +326,28 @@ async def audit_loan(request: AuditRequest, background_tasks: BackgroundTasks):
     Starts background processing of the document.
     """
     try:
-        # Pass the data to the Orchestrator in agents.py
-        # This function handles the Math, Score Calculation, and Routing
-        decision = orchestrate_loan(application)
+        print(f"📥 Received audit request:")
+        print(f"   - loan_id: {request.loan_id}")
+        print(f"   - document_id: {request.document_id}")
+        print(f"   - storage_path: {request.storage_path}")
         
-        return decision
-
+        # Add to background tasks so we don't block the frontend
+        background_tasks.add_task(
+            process_document,
+            request.loan_id,
+            request.document_id,
+            request.storage_path
+        )
+        
+        return {
+            "status": "success",
+            "message": "Document processing started",
+            "loan_id": request.loan_id,
+            "document_id": request.document_id
+        }
+        
     except Exception as e:
-        # If something breaks (e.g., bad math), tell the frontend why
-        print(f"❌ Error during evaluation: {e}")
+        print(f"❌ Error processing audit request: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
