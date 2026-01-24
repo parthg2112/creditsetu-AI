@@ -1,29 +1,54 @@
+
+# backend/app/models.py
 from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 
-class LoanSession(BaseModel):
-    session_id: str
+class LoanApplicationSchema(BaseModel):
+    """
+    Data Schema matching the 'Financial Risk for Loan Approval' dataset.
+    The RAG system will map PDF data to these fields.
+    """
+    # --- Demographics ---
+    Age: int = Field(..., description="Applicant's age")
+    EducationLevel: str = Field(..., description="High School, Bachelor, Master, Doctorate, Associate")
+    EmploymentStatus: str = Field(..., description="Employed, Self-Employed, Unemployed")
+    JobTenure: int = Field(..., description="Years in current job")
+    MaritalStatus: str = Field(..., description="Single, Married, Divorced, Widowed")
+
+    # --- Financials ---
+    AnnualIncome: float
+    MonthlyIncome: float
+    NetWorth: float = Field(..., description="Total Assets - Total Liabilities")
+    SavingsAccountBalance: float
+    CheckingAccountBalance: float
+    TotalAssets: float
+    TotalLiabilities: float
     
-    # --- THE 3 APPROVAL VARIABLES ---
-    annual_income: Optional[float] = None
-    monthly_debt: Optional[float] = None
-    loan_amount: Optional[float] = None
+    # --- Credit Profile (The "Smart" Columns) ---
+    CreditScore: int = Field(..., ge=300, le=850)
+    CreditCardUtilizationRate: float = Field(..., description="0.0 to 1.0 (e.g. 0.30 is 30%)")
+    NumberOfOpenCreditLines: int
+    NumberOfCreditInquiries: int
+    DebtToIncomeRatio: float = Field(..., description="Monthly Debt / Monthly Income")
+    PaymentHistory: int = Field(..., description="Score 0-60 representing payment reliability")
+    LengthOfCreditHistory: int = Field(..., description="Years of credit history")
+    BankruptcyHistory: int = Field(0, description="1 if history exists, 0 otherwise")
+    PreviousLoanDefaults: int = Field(0, description="1 if yes, 0 if no")
     
-    # --- THE 7 SCORE VARIABLES ---
-    payment_history_rating: Optional[int] = Field(None, description="0-60 score")
-    credit_utilization: Optional[float] = Field(None, description="0.0-1.0")
-    credit_history_years: Optional[int] = None
-    open_credit_lines: Optional[int] = None
-    recent_inquiries: Optional[int] = None
-    bankruptcy_history: Optional[int] = None # 0 or 1
-    defaults_history: Optional[int] = None    # 0 or 1
+    # --- The Loan Request ---
+    LoanAmount: float
+    LoanDuration: int = Field(..., description="Duration in months")
+    LoanPurpose: str
+    
+    # --- Alternative Data ---
+    UtilityBillsPaymentHistory: float = Field(0.5, description="0.0 to 1.0 reliability score")
 
-    # --- CONTEXT ---
-    chat_history: List[Dict[str, str]] = [] 
-    is_complete: bool = False 
-
-class ChatResponse(BaseModel):
-    response_text: str
-    audio_base64: Optional[str] = None
-    chart_data: Optional[Dict[str, Any]] = None 
-    report_url: Optional[str] = None
+class AgentResponse(BaseModel):
+    """
+    Standard response format for the Orchestrator.
+    """
+    decision: str  # "APPROVED", "REJECTED", "REFERRED"
+    risk_score: float
+    routing_reason: str
+    agent_name: Optional[str] = None
+    improvement_plan: List[str] = []
