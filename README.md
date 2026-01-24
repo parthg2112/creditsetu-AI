@@ -9,9 +9,13 @@ Automated SME Loan Auditing & Gap Analysis powered by Next.js, FastAPI, and Llam
 Run these in separate terminal windows:
 
 **1. Backend (The Brain)**
+> **Note**: We use `uv` for 10x faster Python setups.
 ```bash
 cd backend
+pip install uv
+uv venv
 source venv/bin/activate
+uv pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
