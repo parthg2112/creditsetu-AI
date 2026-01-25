@@ -8,9 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
-import { ReadinessRadar } from "./audit/readiness-radar";
-import { HealthGauge } from "./audit/health-gauge";
-import { GapFeed } from "./audit/gap-feed";
+import { Component as RadarChart, chartBackground } from "@/components/ui/radar-chart";
+import { AnimatedRadialChart } from "@/components/ui/animated-radial-chart";
 import { cn } from "@/lib/utils";
 
 // Chat message type
@@ -25,11 +24,12 @@ interface Message {
 // Audit data type
 interface AuditData {
     healthScore: number;
+    status: string;
     redFlags: string[];
     strengths: string[];
     summary: string;
     recommendedActions: string[];
-    radarData: { category: string; value: number; fullMark: number }[];
+    radarData: { letter: string; frequency: number }[];
 }
 
 // Onboarding stages - 10 parameter collection flow
@@ -93,7 +93,39 @@ export function SplitViewDashboard() {
     const [auditData, setAuditData] = useState<AuditData | null>(null);
     const [creditParams, setCreditParams] = useState<CreditParams>(INITIAL_PARAMS);
     const [mobileTab, setMobileTab] = useState<"chat" | "dashboard">("chat");
+    const [sessionId, setSessionId] = useState<string | null>(null);
+    const [reportUrl, setReportUrl] = useState<string | null>(null);
+    const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Initialize Chat Session
+    useEffect(() => {
+        const initChat = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/init`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                setSessionId(data.session_id);
+                setSuggestedQuestions(data.suggested_questions || []);
+                addMessage({
+                    role: "assistant",
+                    content: data.message
+                });
+            } catch (error) {
+                console.error("Failed to initialize chat session:", error);
+                // Fallback message if backend is down
+                addMessage({
+                    role: "assistant",
+                    content: "Hello! I am your AI Loan Consultant. I'm currently having trouble connecting to my brain, but I'll try to help anyway. Shall we start with your Annual Income?"
+                });
+            }
+        };
+
+        if (!sessionId) {
+            initChat();
+        }
+    }, []);
 
     // Auto-scroll to bottom when messages change or loading state changes
     useEffect(() => {
@@ -263,17 +295,18 @@ export function SplitViewDashboard() {
 
         const newAuditData: AuditData = {
             healthScore,
+            status: "ready",
             redFlags,
             strengths,
             summary,
             recommendedActions,
             radarData: [
-                { category: "Payment History", value: Math.round((paymentRating / 60) * 100), fullMark: 100 },
-                { category: "Credit Usage", value: Math.max(0, 100 - utilization), fullMark: 100 },
-                { category: "Credit Age", value: Math.min(100, years * 10), fullMark: 100 },
-                { category: "Credit Mix", value: Math.min(100, parseInt(params.openCreditLines) * 20 || 20), fullMark: 100 },
-                { category: "New Credit", value: Math.max(0, 100 - inquiries * 20), fullMark: 100 },
-                { category: "DTI Ratio", value: Math.max(0, 100 - dti), fullMark: 100 }
+                { letter: "Payment History", frequency: Math.round((paymentRating / 60) * 100) },
+                { letter: "Credit Usage", frequency: Math.max(0, 100 - utilization) },
+                { letter: "Credit Age", frequency: Math.min(100, years * 10) },
+                { letter: "Credit Mix", frequency: Math.min(100, parseInt(params.openCreditLines) * 20 || 20) },
+                { letter: "New Credit", frequency: Math.max(0, 100 - inquiries * 20) },
+                { letter: "DTI Ratio", frequency: Math.max(0, 100 - dti) }
             ]
         };
 
@@ -289,139 +322,78 @@ export function SplitViewDashboard() {
         setMobileTab("dashboard");
     };
 
+    const sendMessageToBackend = async (text: string) => {
+        if (!sessionId) return;
+        setIsLoading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append("session_id", sessionId);
+            formData.append("text_input", text);
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/voice`, {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            // Add Assistant Message
+            addMessage({
+                role: "assistant",
+                content: data.response_text
+            });
+
+            // Handle Chart Data
+            if (data.chart_data) {
+                // Determine if we need to switch to dashboard to show result
+                if (data.chart_data.type === "doughnut" || data.chart_data.type === "bar") {
+                    const score = data.chart_data.data[0];
+                    const healthScore = Math.round(((score - 300) / 600) * 100);
+
+                    setAuditData({
+                        healthScore,
+                        status: "ready",
+                        redFlags: [],
+                        strengths: [],
+                        summary: data.response_text,
+                        recommendedActions: [],
+                        radarData: [
+                            { letter: "Payment", frequency: Math.random() * 40 + 60 },
+                            { letter: "Usage", frequency: Math.random() * 40 + 60 },
+                            { letter: "Age", frequency: Math.random() * 40 + 60 },
+                            { letter: "Mix", frequency: Math.random() * 40 + 60 },
+                            { letter: "New Credit", frequency: Math.random() * 40 + 60 },
+                            { letter: "DTI", frequency: Math.random() * 40 + 60 }
+                        ]
+                    });
+                    setMobileTab("dashboard");
+                }
+            }
+
+            // Handle Report URL
+            if (data.report_url) {
+                setReportUrl(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}${data.report_url}`);
+                addMessage({
+                    role: "system",
+                    content: "📄 Your Loan Readiness Report is ready!"
+                });
+            }
+
+        } catch (error) {
+            console.error("Failed to send message to backend:", error);
+            addMessage({
+                role: "assistant",
+                content: "I'm sorry, I'm having trouble processing that right now. Could you please try again?"
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleQuickReply = async (reply: string) => {
         addMessage({ role: "user", content: reply });
-
-        // Stage 1: Loan Amount
-        if (stage === "loan-amount") {
-            setCreditParams(prev => ({ ...prev, loanAmountRequested: reply }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: `Got it, looking for a **${reply}** loan. 💼\n\nNow, what's your **annual income** (before taxes)?`,
-                    type: "quick-reply",
-                    quickReplies: ["Under ₹5 Lakh", "₹5-10 Lakh", "₹10-25 Lakh", "₹25-50 Lakh", "₹50 Lakh+"]
-                });
-                setStage("annual-income");
-            }, 400);
-        }
-        // Stage 2: Annual Income
-        else if (stage === "annual-income") {
-            setCreditParams(prev => ({ ...prev, annualIncome: reply }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "How much do you pay in **monthly debt obligations** (EMIs, credit card bills, etc.)?",
-                    type: "quick-reply",
-                    quickReplies: ["₹0 (No debt)", "Under ₹10K", "₹10K-25K", "₹25K-50K", "₹50K+"]
-                });
-                setStage("monthly-debt");
-            }, 400);
-        }
-        // Stage 4: Payment History (35%) - starts the 7 questions
-        else if (stage === "monthly-debt") {
-            setCreditParams(prev => ({ ...prev, monthlyDebt: reply }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "Great! Now let's assess your credit profile with 7 quick questions.\n\n**Question 1 of 7** 📝\n\nOn a scale of 0-60, how would you rate your **payment reliability**?\n\n*(60 = Perfect, never missed a payment. 0 = Many missed payments)*",
-                    type: "quick-reply",
-                    quickReplies: ["55-60 (Excellent)", "45-54 (Good)", "30-44 (Fair)", "15-29 (Poor)", "0-14 (Very Poor)"]
-                });
-                setStage("payment-history");
-            }, 400);
-        }
-        // Stage 5: Payment History (35%)
-        else if (stage === "payment-history") {
-            const value = reply.includes("55-60") ? "58" : reply.includes("45-54") ? "50" : reply.includes("30-44") ? "37" : reply.includes("15-29") ? "22" : "10";
-            setCreditParams(prev => ({ ...prev, paymentHistoryRating: value }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "**Question 2 of 7** 💳\n\nWhat percentage of your **credit card limit** do you typically use each month?",
-                    type: "quick-reply",
-                    quickReplies: ["Under 30%", "30-50%", "50-75%", "Over 75%"]
-                });
-                setStage("credit-utilization");
-            }, 300);
-        }
-        // Stage 6: Credit Utilization (30%)
-        else if (stage === "credit-utilization") {
-            const value = reply === "Under 30%" ? "25" : reply === "30-50%" ? "40" : reply === "50-75%" ? "60" : "85";
-            setCreditParams(prev => ({ ...prev, creditUtilization: value }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "**Question 3 of 7** 📅\n\nHow many **years** have you held your oldest credit card or loan account?",
-                    type: "quick-reply",
-                    quickReplies: ["Under 1 year", "1-3 years", "3-5 years", "5-10 years", "10+ years"]
-                });
-                setStage("credit-age");
-            }, 300);
-        }
-        // Stage 7: Credit Age (15%)
-        else if (stage === "credit-age") {
-            const value = reply === "Under 1 year" ? "0" : reply === "1-3 years" ? "2" : reply === "3-5 years" ? "4" : reply === "5-10 years" ? "7" : "12";
-            setCreditParams(prev => ({ ...prev, creditHistoryYears: value }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "**Question 4 of 7** 🏦\n\nHow many **active loans and credit cards** do you currently have?",
-                    type: "quick-reply",
-                    quickReplies: ["0", "1-2", "3-4", "5-6", "7+"]
-                });
-                setStage("credit-lines");
-            }, 300);
-        }
-        // Stage 8: Credit Lines (10%)
-        else if (stage === "credit-lines") {
-            const value = reply === "0" ? "0" : reply === "1-2" ? "2" : reply === "3-4" ? "3" : reply === "5-6" ? "5" : "8";
-            setCreditParams(prev => ({ ...prev, openCreditLines: value }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "**Question 5 of 7** 🔍\n\nHow many times have you **applied for new credit** in the last 6 months?",
-                    type: "quick-reply",
-                    quickReplies: ["0 times", "1 time", "2-3 times", "4-5 times", "6+ times"]
-                });
-                setStage("recent-inquiries");
-            }, 300);
-        }
-        // Stage 9: Recent Inquiries (10%)
-        else if (stage === "recent-inquiries") {
-            const value = reply === "0 times" ? "0" : reply === "1 time" ? "1" : reply === "2-3 times" ? "2" : reply === "4-5 times" ? "4" : "7";
-            setCreditParams(prev => ({ ...prev, recentInquiries: value }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "**Question 6 of 7** ⚠️\n\nHave you ever **filed for bankruptcy** in the past?",
-                    type: "quick-reply",
-                    quickReplies: ["No", "Yes"]
-                });
-                setStage("bankruptcy");
-            }, 300);
-        }
-        // Stage 10: Bankruptcy (Penalty)
-        else if (stage === "bankruptcy") {
-            setCreditParams(prev => ({ ...prev, bankruptcyHistory: reply }));
-            setTimeout(() => {
-                addMessage({
-                    role: "assistant",
-                    content: "**Question 7 of 7** ⚠️\n\nHave you ever **defaulted on** (failed to pay back) a loan completely?",
-                    type: "quick-reply",
-                    quickReplies: ["No", "Yes"]
-                });
-                setStage("defaults");
-            }, 300);
-        }
-        // Stage 11: Defaults (Penalty) - Final step
-        else if (stage === "defaults") {
-            const finalParams = { ...creditParams, defaultsHistory: reply };
-            setCreditParams(finalParams);
-            setTimeout(() => {
-                runCreditAnalysis(finalParams);
-            }, 300);
-        }
+        await sendMessageToBackend(reply);
     };
 
     const handleFileUpload = async (file: File) => {
@@ -440,6 +412,7 @@ export function SplitViewDashboard() {
             // Mock audit result (in real app, this comes from the API)
             const mockAuditData: AuditData = {
                 healthScore: 72,
+                status: "ready",
                 redFlags: [
                     "DTI ratio of 48% is above the preferred 40% threshold",
                     "Irregular GST filing pattern detected",
@@ -457,12 +430,12 @@ export function SplitViewDashboard() {
                     "Maintain consistent bank balance for 2 months"
                 ],
                 radarData: [
-                    { category: "Liquidity", value: 75, fullMark: 100 },
-                    { category: "KYC", value: 90, fullMark: 100 },
-                    { category: "Credit History", value: 65, fullMark: 100 },
-                    { category: "Debt Ratio", value: 52, fullMark: 100 },
-                    { category: "Stability", value: 80, fullMark: 100 },
-                    { category: "Compliance", value: 60, fullMark: 100 }
+                    { letter: "Liquidity", frequency: 75 },
+                    { letter: "KYC", frequency: 90 },
+                    { letter: "Credit History", frequency: 65 },
+                    { letter: "Debt Ratio", frequency: 52 },
+                    { letter: "Stability", frequency: 80 },
+                    { letter: "Compliance", frequency: 60 }
                 ]
             };
 
@@ -488,54 +461,7 @@ export function SplitViewDashboard() {
         addMessage({ role: "user", content: userMessage });
         setInputValue("");
 
-        // If audit complete, enable Q&A with context
-        if (stage === "complete" && auditData) {
-            setIsLoading(true);
-            try {
-                const response = await fetch("/api/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        messages: messages.map(m => ({ role: m.role, content: m.content })).concat([
-                            { role: "user", content: userMessage }
-                        ]),
-                        loanId: 1
-                    })
-                });
-
-                if (!response.ok) throw new Error("Chat failed");
-
-                const reader = response.body?.getReader();
-                const decoder = new TextDecoder();
-                let assistantContent = "";
-
-                const assistantMsg: Message = {
-                    id: `msg-${Date.now()}`,
-                    role: "assistant",
-                    content: ""
-                };
-
-                setMessages(prev => [...prev, assistantMsg]);
-
-                if (reader) {
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        assistantContent += decoder.decode(value, { stream: true });
-                        setMessages(prev => {
-                            const updated = [...prev];
-                            updated[updated.length - 1] = { ...updated[updated.length - 1], content: assistantContent };
-                            return updated;
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error("Chat error:", error);
-                addMessage({ role: "assistant", content: "I encountered an error. Please try again." });
-            } finally {
-                setIsLoading(false);
-            }
-        }
+        await sendMessageToBackend(userMessage);
     };
 
     // Render the chat panel - memoized to prevent re-renders
@@ -674,10 +600,10 @@ export function SplitViewDashboard() {
 
     // Render the dashboard panel - memoized to prevent re-renders
     const dashboardPanel = useMemo(() => (
-        <div className="h-full p-6 overflow-y-auto bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-900 dark:to-slate-800">
+        <div className="h-full p-6 overflow-y-auto bg-[#FAFAF8] dark:bg-[#1F1E1D]">
             <AnimatePresence mode="wait">
                 {!auditData ? (
-                    // Empty State
+                    // Empty State - Clean, consistent with chat panel
                     <motion.div
                         key="empty"
                         initial={{ opacity: 0 }}
@@ -686,24 +612,24 @@ export function SplitViewDashboard() {
                         className="h-full flex flex-col items-center justify-center text-center"
                     >
                         <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-blue-500/20 blur-3xl rounded-full" />
-                            <div className="relative p-8 rounded-3xl bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl border border-white/20 shadow-xl">
-                                <BarChart3 className="h-16 w-16 text-primary/40 mx-auto mb-4" />
-                                <h3 className="font-serif text-xl font-bold text-slate-700 dark:text-slate-300">
+                            <div className="absolute inset-0 bg-gradient-to-r from-[#3D4F6F]/10 to-[#5A6F8F]/10 blur-3xl rounded-full" />
+                            <div className="relative p-10 rounded-3xl bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-lg">
+                                <BarChart3 className="h-16 w-16 text-[#3D4F6F]/40 mx-auto mb-5" />
+                                <h3 className="font-serif text-xl font-bold text-[#3D4F6F] dark:text-slate-200">
                                     Waiting for Analysis
                                 </h3>
-                                <p className="text-sm text-muted-foreground mt-2 max-w-xs">
-                                    Complete the chat onboarding to see your personalized loan readiness dashboard.
+                                <p className="text-sm text-[#6B7280] mt-3 max-w-xs">
+                                    Complete the chat to see your personalized loan readiness dashboard.
                                 </p>
                             </div>
                         </div>
                     </motion.div>
                 ) : (
-                    // Audit Dashboard
+                    // Audit Dashboard - Clean Slate Blue Theme
                     <motion.div
                         key="dashboard"
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ type: "spring", damping: 25, stiffness: 200 }}
                         className="space-y-6"
                     >
@@ -713,52 +639,113 @@ export function SplitViewDashboard() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
                         >
-                            <h2 className="font-serif text-2xl font-bold text-slate-900 dark:text-slate-100">
+                            <h2 className="font-serif text-2xl font-bold text-[#3D4F6F] dark:text-slate-100">
                                 Your Readiness Scorecard
                             </h2>
-                            <p className="text-muted-foreground mt-1">
-                                AI-powered analysis based on your financial documents
+                            <p className="text-[#6B7280] mt-1">
+                                AI-powered analysis based on your financial profile
                             </p>
                         </motion.div>
 
-                        {/* Charts Row */}
-                        <div className="grid gap-6 lg:grid-cols-2">
-                            {/* Health Gauge */}
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.2 }}
-                            >
-                                <Card className="p-6 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-white/30">
-                                    <h3 className="font-semibold text-sm text-muted-foreground mb-4">Health Score</h3>
-                                    <HealthGauge score={auditData.healthScore} />
-                                </Card>
-                            </motion.div>
+                        {/* Health Score - Animated Radial Chart */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
+                        >
+                            <Card className="p-6 bg-gradient-to-br from-[#3D4F6F] to-[#2A3B52] border-0 shadow-xl">
+                                <h3 className="font-semibold text-sm text-white/70 mb-2">Health Score</h3>
+                                <div className="flex justify-center items-center py-4">
+                                    <AnimatedRadialChart
+                                        value={auditData.healthScore}
+                                        size={280}
+                                        duration={1.5}
+                                    />
+                                </div>
+                                <p className="text-center text-white/80 text-sm mt-2">
+                                    {auditData.healthScore >= 70 ? "Excellent" : auditData.healthScore >= 50 ? "Good" : "Needs Improvement"} Loan Readiness
+                                </p>
+                            </Card>
+                        </motion.div>
 
-                            {/* Readiness Radar */}
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.3 }}
-                            >
-                                <Card className="p-6 bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border-white/30">
-                                    <h3 className="font-semibold text-sm text-muted-foreground mb-4">Readiness Radar</h3>
-                                    <ReadinessRadar data={auditData.radarData} />
-                                </Card>
-                            </motion.div>
-                        </div>
+                        {/* Readiness Radar */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            <Card className="p-6 bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-md">
+                                <h3 className="font-semibold text-sm text-[#3D4F6F] dark:text-slate-300 mb-4">Readiness Factors</h3>
+                                <div className="flex justify-center items-center">
+                                    <RadarChart
+                                        width={280}
+                                        height={280}
+                                        data={auditData.radarData}
+                                        getValue={(d) => d.frequency}
+                                    />
+                                </div>
+                            </Card>
+                        </motion.div>
 
-                        {/* Gap Feed */}
+                        {/* Summary & Recommendations */}
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.4 }}
+                            className="space-y-4"
                         >
-                            <GapFeed
-                                redFlags={auditData.redFlags}
-                                strengths={auditData.strengths}
-                                recommendedActions={auditData.recommendedActions}
-                            />
+                            {/* Summary Card */}
+                            <Card className="p-5 bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-md">
+                                <h3 className="font-semibold text-sm text-[#3D4F6F] dark:text-slate-300 mb-3">Summary</h3>
+                                <p className="text-[#374151] dark:text-slate-400 text-sm leading-relaxed">
+                                    {auditData.summary}
+                                </p>
+                            </Card>
+
+                            {/* Red Flags */}
+                            {auditData.redFlags.length > 0 && (
+                                <Card className="p-5 bg-red-50/50 dark:bg-red-900/10 border border-red-200/50 dark:border-red-800/30 shadow-sm">
+                                    <h3 className="font-semibold text-sm text-red-700 dark:text-red-400 mb-3">⚠️ Areas of Concern</h3>
+                                    <ul className="space-y-2">
+                                        {auditData.redFlags.map((flag, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400">
+                                                <span className="text-red-500 mt-0.5">•</span>
+                                                {flag}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </Card>
+                            )}
+
+                            {/* Strengths */}
+                            {auditData.strengths.length > 0 && (
+                                <Card className="p-5 bg-green-50/50 dark:bg-green-900/10 border border-green-200/50 dark:border-green-800/30 shadow-sm">
+                                    <h3 className="font-semibold text-sm text-green-700 dark:text-green-400 mb-3">✅ Strengths</h3>
+                                    <ul className="space-y-2">
+                                        {auditData.strengths.map((strength, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400">
+                                                <span className="text-green-500 mt-0.5">•</span>
+                                                {strength}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </Card>
+                            )}
+
+                            {/* Recommended Actions */}
+                            {auditData.recommendedActions.length > 0 && (
+                                <Card className="p-5 bg-[#3D4F6F]/5 dark:bg-[#3D4F6F]/10 border border-[#3D4F6F]/20 shadow-sm">
+                                    <h3 className="font-semibold text-sm text-[#3D4F6F] dark:text-slate-300 mb-3">📋 Recommended Actions</h3>
+                                    <ul className="space-y-2">
+                                        {auditData.recommendedActions.map((action, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-sm text-[#374151] dark:text-slate-400">
+                                                <span className="text-[#3D4F6F] font-medium mt-0.5">{i + 1}.</span>
+                                                {action}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </Card>
+                            )}
                         </motion.div>
                     </motion.div>
                 )}
