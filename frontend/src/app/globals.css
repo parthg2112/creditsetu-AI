@@ -111,50 +111,50 @@
 :root {
   --radius: 0.75rem; /* rounded-xl */
 
-  /* Primary Brand: Deep trustworthy Slate Blue (HSL 222, 47%, 31%) */
-  --primary: hsl(222 47% 31%);
-  --primary-foreground: hsl(210 40% 98%);
+  /* Primary Brand: Earthy Burnt Orange / Terracotta */
+  --primary: hsl(25 70% 50%);
+  --primary-foreground: hsl(35 30% 98%);
 
-  /* Backgrounds: Very light off-white/cool grays (HSL 210, 40%, 98%) */
-  --background: hsl(210 40% 98%);
-  --foreground: hsl(222 47% 15%);
+  /* Backgrounds: Warm off-white/cream */
+  --background: hsl(35 30% 98%);
+  --foreground: hsl(25 10% 15%);
 
   --card: hsl(0 0% 100%);
-  --card-foreground: hsl(222 47% 15%);
+  --card-foreground: hsl(25 10% 15%);
 
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(222 47% 15%);
+  --popover-foreground: hsl(25 10% 15%);
 
-  --secondary: hsl(210 40% 90%); /* Slightly darker than bg for secondary */
-  --secondary-foreground: hsl(222 47% 31%);
+  --secondary: hsl(35 20% 90%);
+  --secondary-foreground: hsl(25 70% 50%);
 
-  --muted: hsl(210 40% 90%);
-  --muted-foreground: hsl(215 16% 47%);
+  --muted: hsl(35 20% 90%);
+  --muted-foreground: hsl(25 5% 45%);
 
-  --accent: hsl(210 40% 90%);
-  --accent-foreground: hsl(222 47% 31%);
+  --accent: hsl(35 20% 90%);
+  --accent-foreground: hsl(25 70% 50%);
 
   --destructive: hsl(0 84.2% 60.2%);
-  --destructive-foreground: hsl(210 40% 98%);
+  --destructive-foreground: hsl(35 30% 98%);
 
-  --border: hsl(214.3 31.8% 91.4%);
-  --input: hsl(214.3 31.8% 91.4%);
-  --ring: hsl(222 47% 31%);
+  --border: hsl(35 15% 90%);
+  --input: hsl(35 15% 90%);
+  --ring: hsl(25 70% 50%);
 
-  --chart-1: hsl(12 76% 61%);
+  --chart-1: hsl(25 70% 50%);
   --chart-2: hsl(173 58% 39%);
   --chart-3: hsl(197 37% 24%);
   --chart-4: hsl(43 74% 66%);
   --chart-5: hsl(27 87% 67%);
 
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
-  --sidebar-primary: hsl(222 47% 31%);
-  --sidebar-primary-foreground: hsl(0 0% 98%);
-  --sidebar-accent: hsl(240 4.8% 95.9%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 91%);
-  --sidebar-ring: hsl(222 47% 31%);
+  --sidebar: hsl(35 30% 96%);
+  --sidebar-foreground: hsl(25 10% 20%);
+  --sidebar-primary: hsl(25 70% 50%);
+  --sidebar-primary-foreground: hsl(35 30% 98%);
+  --sidebar-accent: hsl(35 20% 92%);
+  --sidebar-accent-foreground: hsl(25 70% 50%);
+  --sidebar-border: hsl(35 15% 90%);
+  --sidebar-ring: hsl(25 70% 50%);
   --bg-0: #FAF9F5;
   --bg-000: #FAF9F5;
   --bg-100: #FFFFFF;

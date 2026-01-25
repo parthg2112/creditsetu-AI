@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Bell, HelpCircle, LogOut } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, LogOut, LayoutDashboard, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -20,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 export function Header() {
     const pathname = usePathname();
+    const router = useRouter();
     const { language, setLanguage, t } = useLanguage();
     const { data: session } = useSession();
 
@@ -40,7 +40,28 @@ export function Header() {
                 <Breadcrumb className="hidden md:flex">
                     <BreadcrumbList>
                         <BreadcrumbItem>
-                            <BreadcrumbLink href="/" className="transition-colors hover:text-foreground">Home</BreadcrumbLink>
+                            <Select
+                                value={pathname.startsWith("/marketplace") ? "marketplace" : "dashboard"}
+                                onValueChange={(val) => router.push(val === "marketplace" ? "/marketplace" : "/dashboard")}
+                            >
+                                <SelectTrigger className="w-[140px] h-9 gap-2 px-3 text-sm font-medium bg-transparent border-none hover:bg-muted/50 transition-colors focus:ring-0">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent align="start" className="min-w-[140px]">
+                                    <SelectItem value="dashboard" className="cursor-pointer">
+                                        <div className="flex items-center gap-2">
+                                            <LayoutDashboard className="w-4 h-4" />
+                                            <span>Dashboard</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value="marketplace" className="cursor-pointer">
+                                        <div className="flex items-center gap-2">
+                                            <Store className="w-4 h-4" />
+                                            <span>Marketplace</span>
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
                         </BreadcrumbItem>
                         <BreadcrumbSeparator />
                         <BreadcrumbItem>
