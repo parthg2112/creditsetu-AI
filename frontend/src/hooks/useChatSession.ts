@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 import { useLanguage } from "@/contexts/language-context";
 
 // Types
@@ -39,6 +40,9 @@ export function useChatSession(options?: UseChatSessionOptions) {
     const hasInitialized = useRef(false);
     const { language, t } = useLanguage();
 
+    const { data: session } = useSession();
+    const userEmail = session?.user?.email || "";
+
     // Add a message to the chat
     const addMessage = useCallback((msg: Omit<Message, "id">) => {
         const uniqueId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -55,15 +59,28 @@ export function useChatSession(options?: UseChatSessionOptions) {
 
             try {
                 const response = await fetch(`${backendUrl}/chat/init?language=${language}`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: {
+                        "X-User-Email": userEmail
+                    }
                 });
                 const data = await response.json();
                 setSessionId(data.session_id);
                 setSuggestedQuestions(data.suggested_questions || []);
-                addMessage({
-                    role: "assistant",
-                    content: data.message
-                });
+
+                // If history returned, set it
+                if (data.chat_history && data.chat_history.length > 0) {
+                    setMessages(data.chat_history.map((msg: any) => ({
+                        id: `hist-${Math.random()}`,
+                        role: msg.role,
+                        content: msg.content
+                    })));
+                } else {
+                    addMessage({
+                        role: "assistant",
+                        content: data.message
+                    });
+                }
             } catch (error) {
                 console.error("Failed to initialize chat session:", error);
                 addMessage({
@@ -76,7 +93,7 @@ export function useChatSession(options?: UseChatSessionOptions) {
         if (!sessionId) {
             initChat();
         }
-    }, [sessionId, language, addMessage]);
+    }, [sessionId, language, addMessage, userEmail]);
 
     // Send text message to backend
     const sendMessage = useCallback(async (text: string) => {
@@ -96,6 +113,9 @@ export function useChatSession(options?: UseChatSessionOptions) {
             const response = await fetch(`${backendUrl}/chat/voice`, {
                 method: "POST",
                 body: formData,
+                headers: {
+                    "X-User-Email": userEmail
+                }
             });
 
             const data = await response.json();
@@ -144,37 +164,7 @@ export function useChatSession(options?: UseChatSessionOptions) {
         } finally {
             setIsLoading(false);
         }
-    }, [sessionId, language, addMessage, options]);
-
-    // Start voice recording
-    const startRecording = useCallback(async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = mediaRecorder;
-            const chunks: BlobPart[] = [];
-
-            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-                await sendAudio(audioBlob);
-            };
-
-            mediaRecorder.start();
-            setIsRecording(true);
-        } catch (err) {
-            console.error("Error accessing microphone:", err);
-        }
-    }, []);
-
-    // Stop voice recording
-    const stopRecording = useCallback(() => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-        }
-    }, [isRecording]);
+    }, [sessionId, language, addMessage, options, userEmail]);
 
     // Send audio to backend
     const sendAudio = useCallback(async (audioBlob: Blob) => {
@@ -194,6 +184,9 @@ export function useChatSession(options?: UseChatSessionOptions) {
             const response = await fetch(`${backendUrl}/chat/voice`, {
                 method: "POST",
                 body: formData,
+                headers: {
+                    "X-User-Email": userEmail
+                }
             });
 
             const data = await response.json();
@@ -224,7 +217,37 @@ export function useChatSession(options?: UseChatSessionOptions) {
         } finally {
             setIsLoading(false);
         }
-    }, [sessionId, language, addMessage, t, options]);
+    }, [sessionId, language, addMessage, t, options, userEmail]);
+
+    // Start voice recording
+    const startRecording = useCallback(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            const chunks: BlobPart[] = [];
+
+            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                await sendAudio(audioBlob);
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+        }
+    }, [sendAudio]);
+
+    // Stop voice recording
+    const stopRecording = useCallback(() => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+    }, [isRecording]);
 
     return {
         // State

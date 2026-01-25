@@ -147,7 +147,7 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
             <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                        <Avatar className="h-8 w-8 mt-1 border border-border flex-shrink-0">
+                        <Avatar className="h-8 w-8 mt-1 border border-border shrink-0">
                             {msg.role === 'assistant' ? (
                                 <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground">
                                     <Bot className="h-4 w-4" />

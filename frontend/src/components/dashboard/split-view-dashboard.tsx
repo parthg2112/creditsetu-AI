@@ -13,6 +13,8 @@ import { AnimatedRadialChart } from "@/components/ui/animated-radial-chart";
 import { WormLoader } from "@/components/ui/worm-loader";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
+import { ClaudeChatInput } from "@/components/ui/claude-style-chat-input";
+import { useSession } from "next-auth/react";
 
 // Chat message type
 interface Message {
@@ -102,6 +104,7 @@ export function SplitViewDashboard() {
 
     // Global Language State
     const { language, t } = useLanguage();
+    const { data: session, status } = useSession();
 
     const hasInitialized = useRef(false);
 
@@ -112,16 +115,30 @@ export function SplitViewDashboard() {
             hasInitialized.current = true;
 
             try {
+                const headers: HeadersInit = {};
+                if (session?.user?.email) {
+                    headers['X-User-Email'] = session.user.email;
+                }
+
                 const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/init?language=${language}`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers
                 });
                 const data = await response.json();
                 setSessionId(data.session_id);
                 setSuggestedQuestions(data.suggested_questions || []);
-                addMessage({
-                    role: "assistant",
-                    content: data.message
-                });
+
+                if (data.chat_history && data.chat_history.length > 0) {
+                    setMessages(data.chat_history.map((msg: any) => ({
+                        ...msg,
+                        id: `hist-${Date.now()}-${Math.random()}`
+                    })));
+                } else {
+                    addMessage({
+                        role: "assistant",
+                        content: data.message
+                    });
+                }
             } catch (error) {
                 console.error("Failed to initialize chat session:", error);
                 // Fallback message if backend is down
@@ -132,10 +149,12 @@ export function SplitViewDashboard() {
             }
         };
 
-        if (!sessionId) {
+        if (status !== "loading" && !sessionId) {
             initChat();
         }
-    }, []);
+    }, [status, session, language]);
+
+
 
     // Ref for the scroll anchor at the bottom of messages
     const scrollAnchorRef = useRef<HTMLDivElement>(null);
@@ -346,11 +365,13 @@ export function SplitViewDashboard() {
         if (!sessionId) return;
         setIsLoading(true);
 
-        // Optimistic update
-        addMessage({
+        // Optimistic update with temp ID
+        const tempId = `temp-${Date.now()}`;
+        setMessages(prev => [...prev, {
+            id: tempId,
             role: "user",
-            content: t('voice_message')
-        });
+            content: t('listening') + " 🎤"
+        }]);
 
         const formData = new FormData();
         formData.append("session_id", sessionId);
@@ -361,8 +382,21 @@ export function SplitViewDashboard() {
             const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/voice`, {
                 method: "POST",
                 body: formData,
+                headers: session?.user?.email ? { 'X-User-Email': session.user.email } : undefined
             });
             const data = await response.json();
+
+            // Update user message with transcription
+            if (data.user_transcription) {
+                setMessages(prev => prev.map(msg =>
+                    msg.id === tempId ? { ...msg, content: data.user_transcription } : msg
+                ));
+            } else {
+                // Fallback if no transcription
+                setMessages(prev => prev.map(msg =>
+                    msg.id === tempId ? { ...msg, content: t('voice_message') } : msg
+                ));
+            }
 
             // Handle Response
             addMessage({ role: "assistant", content: data.response_text });
@@ -387,11 +421,13 @@ export function SplitViewDashboard() {
             }
         } catch (error) {
             console.error("Error sending audio to backend:", error);
+            // Remove temp message on error
+            setMessages(prev => prev.filter(msg => msg.id !== tempId));
             addMessage({ role: "system", content: "Voice processing failed. Please try again." });
         } finally {
             setIsLoading(false);
         }
-    }, [sessionId, language, t]);
+    }, [sessionId, language, t, session]);
 
     const startRecording = useCallback(async () => {
         try {
@@ -438,6 +474,7 @@ export function SplitViewDashboard() {
             const response = await fetch(`${backendUrl}/chat/voice`, {
                 method: "POST",
                 body: formData,
+                headers: session?.user?.email ? { 'X-User-Email': session.user.email } : undefined
             });
 
             const data = await response.json();
@@ -549,15 +586,25 @@ export function SplitViewDashboard() {
         }, 3000);
     };
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (!inputValue.trim() || isLoading) return;
+    const handleSendMessage = async (text: string) => {
+        if (!text.trim() || isLoading) return;
 
-        const userMessage = inputValue.trim();
-        addMessage({ role: "user", content: userMessage });
-        setInputValue("");
+        addMessage({ role: "user", content: text });
+        await sendMessageToBackend(text);
+    };
 
-        await sendMessageToBackend(userMessage);
+    // Dynamic Status Message
+    const getStatusMessage = () => {
+        if (isRecording) return t('listening');
+        if (isLoading) {
+            if (stage === "processing") return t('analyzing');
+            if (stage === "annual-income") return t('verifying_income');
+            if (stage === "loan-amount") return t('checking_eligibility');
+            return t('thinking');
+        }
+        if (stage === "complete") return t('audit_complete');
+        if (messages.length === 0) return t('ready_to_help');
+        return t('waiting_for_input');
     };
 
     // Render the chat panel - memoized to prevent re-renders
@@ -567,14 +614,14 @@ export function SplitViewDashboard() {
             <div className="flex items-center gap-3 p-4 border-b border-[#E5E5E5] dark:border-[#30302E] bg-white dark:bg-[#2B2A29]">
                 <div className="relative">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white shadow-sm">
-                        <Bot className="h-4 w-4" />
+                        <Sparkles className="h-4 w-4" />
                     </div>
-                    <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-green-500 border-2 border-white dark:border-[#2B2A29]" />
+                    <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-[#2B2A29] ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} />
                 </div>
                 <div>
                     <h3 className="font-semibold text-[15px] text-[#1F1E1D] dark:text-[#ECECEC]">CreditSetu AI</h3>
-                    <p className="text-xs font-medium text-green-600 dark:text-green-500">
-                        {isLoading ? t('analyzing') : t('online')}
+                    <p className="text-xs font-medium text-muted-foreground">
+                        {getStatusMessage()}
                     </p>
                 </div>
             </div>
@@ -596,27 +643,60 @@ export function SplitViewDashboard() {
                                 : "border-transparent"
                         )}>
                             {msg.role === 'assistant' ? (
-                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white">
-                                    <Bot className="h-4 w-4" />
+                                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white rounded-full">
+                                    <Sparkles className="h-4 w-4" />
                                 </div>
                             ) : (
-                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">U</AvatarFallback>
+                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                    {session?.user?.image ? (
+                                        <img src={session.user.image} alt="User" className="h-full w-full object-cover" />
+                                    ) : (
+                                        "U"
+                                    )}
+                                </AvatarFallback>
                             )}
                         </Avatar>
                         <div className="space-y-2 max-w-[85%]">
                             <div className={cn(
-                                "rounded-2xl p-3.5 text-[14px] leading-relaxed",
+                                "rounded-2xl p-4 text-[15px] leading-relaxed shadow-sm",
                                 msg.role === 'user'
-                                    ? 'bg-primary text-primary-foreground rounded-tr-md shadow-sm'
-                                    : 'bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] rounded-tl-md shadow-sm'
+                                    ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                    : 'bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] rounded-tl-sm'
                             )}>
                                 {msg.role === 'assistant' ? (
-                                    <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-[14px] prose-strong:text-[#1F1E1D] dark:prose-strong:text-[#ECECEC]">
-                                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                                    </div>
+                                    msg.content.includes("Welcome to CreditSetu AI") ? (
+                                        <div className="flex flex-col gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-lg font-semibold text-[#1F1E1D] dark:text-[#ECECEC]">{t('welcome_message')}</span>
+                                                <span className="text-xl">👋</span>
+                                            </div>
+                                            <p className="text-muted-foreground">{t('ai_intro')}</p>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                                                {[
+                                                    { icon: "🏦", label: t('check_eligibility'), cmd: "1" },
+                                                    { icon: "📈", label: t('improve_score'), cmd: "2" },
+                                                    { icon: "📄", label: t('document_checklist'), cmd: "3" },
+                                                    { icon: "✅", label: t('full_audit'), cmd: "4" }
+                                                ].map((opt) => (
+                                                    <button
+                                                        key={opt.cmd}
+                                                        onClick={() => handleSendMessage(opt.cmd)}
+                                                        className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#30302E] border border-[#E5E5E5] dark:border-[#404040] hover:border-[#D46B4F] hover:shadow-sm transition-all text-left group"
+                                                    >
+                                                        <span className="text-xl group-hover:scale-110 transition-transform">{opt.icon}</span>
+                                                        <span className="text-sm font-medium text-[#1F1E1D] dark:text-[#ECECEC]">{opt.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-[15px] prose-strong:text-[#1F1E1D] dark:prose-strong:text-[#ECECEC]">
+                                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                        </div>
+                                    )
                                 ) : msg.role === 'system' ? (
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2 text-[#D46B4F] font-medium">
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center gap-2 text-[#D46B4F] font-medium border-b border-dashed border-[#D46B4F]/30 pb-2">
                                             <Sparkles className="h-4 w-4" />
                                             <span>{t('report_ready')}</span>
                                         </div>
@@ -624,7 +704,7 @@ export function SplitViewDashboard() {
                                         {reportUrl && (
                                             <Button
                                                 onClick={() => window.open(reportUrl, '_blank')}
-                                                className="mt-2 bg-[#3D4F6F] hover:bg-[#2A3B52] text-white w-full flex items-center justify-center gap-2"
+                                                className="mt-1 bg-[#3D4F6F] hover:bg-[#2A3B52] text-white w-full flex items-center justify-center gap-2 h-10 rounded-xl"
                                             >
                                                 <BarChart3 className="h-4 w-4" />
                                                 {t('download_pdf')}
@@ -632,7 +712,7 @@ export function SplitViewDashboard() {
                                         )}
                                     </div>
                                 ) : (
-                                    <span className="text-[14px]">{msg.content}</span>
+                                    <span className="text-[15px]">{msg.content}</span>
                                 )}
                             </div>
 
@@ -660,14 +740,14 @@ export function SplitViewDashboard() {
                 {isLoading && (
                     <div className="flex gap-3">
                         <Avatar className="h-8 w-8 mt-1 border border-[#E5E5E5] dark:border-[#404040] flex-shrink-0">
-                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white">
-                                <Bot className="h-4 w-4" />
+                            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white rounded-full">
+                                <Sparkles className="h-4 w-4" />
                             </div>
                         </Avatar>
-                        <div className="rounded-2xl rounded-tl-md p-3.5 bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-sm">
+                        <div className="rounded-2xl rounded-tl-sm p-4 bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-sm">
                             <div className="flex items-center gap-2 text-[13px] text-[#6B7280] dark:text-[#9CA3AF]">
                                 <Loader2 className="h-4 w-4 animate-spin text-[#D46B4F]" />
-                                {stage === "processing" ? "Analyzing documents..." : "Thinking..."}
+                                {getStatusMessage()}
                             </div>
                         </div>
                     </div>
@@ -678,70 +758,27 @@ export function SplitViewDashboard() {
             </div>
 
             {/* Claude-style Input */}
-            <form onSubmit={handleSubmit} className="p-4 bg-white dark:bg-[#2B2A29] border-t border-[#E5E5E5] dark:border-[#30302E]">
-                <div className={`
-                    relative flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-[#E5E5E5] dark:border-[#404040]
-                    bg-[#FAFAF8] dark:bg-[#1F1E1D]
-                    shadow-[0_0_15px_rgba(0,0,0,0.04)] hover:shadow-[0_0_20px_rgba(0,0,0,0.08)]
-                    focus-within:shadow-[0_0_25px_rgba(0,0,0,0.1)] focus-within:border-[#D46B4F]/40
-                    transition-all duration-200
-                `}>
-                    <input
-                        type="text"
-                        placeholder={stage === "complete" ? t('ask_anything') : t('type_message')}
-                        className="flex-1 bg-transparent border-0 outline-none text-[15px] text-[#1F1E1D] dark:text-[#ECECEC] placeholder:text-[#9CA3AF] dark:placeholder:text-[#6B7280] py-1.5"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        disabled={isLoading || (stage !== "complete" && stage !== "loan-amount")}
-                    />
-
-                    {/* Mic Button - English Only */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (language !== 'en') {
-                                alert(t('voice_only_english'));
-                                return;
-                            }
-                            if (isRecording) {
-                                stopRecording();
-                            } else {
-                                startRecording();
-                            }
-                        }}
-                        title={language !== 'en' ? t('voice_only_english') : undefined}
-                        className={`
-                            h-8 w-8 rounded-xl shrink-0 flex items-center justify-center transition-all duration-200
-                            ${language !== 'en'
-                                ? 'text-[#9CA3AF] opacity-50 cursor-not-allowed'
-                                : isRecording
-                                    ? 'bg-red-500 text-white animate-pulse shadow-md'
-                                    : 'text-[#9CA3AF] hover:text-[#D46B4F] hover:bg-[#F3F4F6] dark:hover:bg-[#30302E]'}
-                        `}
-                        disabled={isLoading || language !== 'en'}
-                    >
-                        <Mic className="h-4 w-4" />
-                    </button>
-
-                    <button
-                        type="submit"
-                        className={`
-                            h-8 w-8 rounded-xl shrink-0 flex items-center justify-center transition-all duration-200
-                            ${inputValue.trim() && !isLoading
-                                ? 'bg-[#D46B4F] text-white hover:bg-[#C45A3E] shadow-md active:scale-95'
-                                : 'bg-[#E5E5E5] dark:bg-[#404040] text-[#9CA3AF] cursor-not-allowed'}
-                        `}
-                        disabled={!inputValue.trim() || isLoading}
-                    >
-                        <Send className="h-4 w-4" />
-                    </button>
-                </div>
-                <p className="text-center text-[11px] text-[#9CA3AF] dark:text-[#6B7280] mt-3">
-                    Powered by CreditSetu AI • Results are indicative only
-                </p>
-            </form>
+            <div className="p-4 bg-white dark:bg-[#2B2A29] border-t border-[#E5E5E5] dark:border-[#30302E]">
+                <ClaudeChatInput
+                    onSendMessage={({ message }) => handleSendMessage(message)}
+                    placeholder={t('how_can_i_help')}
+                    onMicClick={() => {
+                        if (language !== 'en') {
+                            alert(t('voice_only_english'));
+                            return;
+                        }
+                        if (isRecording) {
+                            stopRecording();
+                        } else {
+                            startRecording();
+                        }
+                    }}
+                    isRecording={isRecording}
+                />
+            </div>
         </div>
-    ), [messages, isLoading, inputValue, stage, language, isRecording, startRecording, stopRecording, handleSubmit, handleQuickReply, reportUrl, t]);
+    ), [messages, isLoading, stage, language, isRecording, startRecording, stopRecording, handleQuickReply, reportUrl, t, session]);
+
 
     // Render the dashboard panel - memoized to prevent re-renders
     const dashboardPanel = useMemo(() => (
@@ -784,7 +821,7 @@ export function SplitViewDashboard() {
                             transition={{ delay: 0.1 }}
                         >
                             <h2 className="font-serif text-2xl font-bold text-[#3D4F6F] dark:text-slate-100">
-                                Your Readiness Scorecard
+                                {t('your_readiness_scorecard')}
                             </h2>
                             <p className="text-[#6B7280] mt-1">
                                 AI-powered analysis based on your financial profile

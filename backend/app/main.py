@@ -33,6 +33,7 @@ from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from app.utils.supabase_client import save_message, get_chat_history, get_latest_session
 
 # --- 1. CONFIGURATION & VALIDATION ---
 load_dotenv()
@@ -66,7 +67,23 @@ class Settings(BaseSettings):
 settings = Settings()
 
 # Rate Limiter
+# Rate Limiter
 limiter = Limiter(key_func=get_remote_address)
+
+def get_user_email(request: Request) -> str:
+    return request.headers.get("X-User-Email", "anonymous")
+
+def whitelist_key(request: Request) -> Optional[str]:
+    email = get_user_email(request)
+    if email in ["mail@parthg.me", "heetp420@gmail.com", "soumyadoshi28@gmail.com"]:
+        return email
+    return None
+
+def standard_key(request: Request) -> Optional[str]:
+    email = get_user_email(request)
+    if email not in ["mail@parthg.me", "heetp420@gmail.com", "soumyadoshi28@gmail.com"]:
+        return email
+    return None
 
 
 @asynccontextmanager
@@ -97,7 +114,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_headers=["*"],  # Allow all headers to fix CORS issues with custom headers like X-User-Email
     allow_credentials=True,
 )
 
@@ -127,6 +144,7 @@ class LoanSession(BaseModel):
 
 class ChatResponse(BaseModel):
     response_text: str
+    user_transcription: Optional[str] = None
     audio_url: Optional[str] = None  # Changed from base64 to URL
     chart_data: Optional[Dict[str, Any]] = None
     report_url: Optional[str] = None
@@ -449,6 +467,18 @@ You are Creditsetu, an expert Indian AI Loan Consultant.
    - Collect the 10 mandatory variables one by one.
    - Extract numbers from user responses into `extracted_updates`.
 
+**CRITICAL RULES:**
+1. **STRICT EXTRACTION:** ONLY extract the variable corresponding to the `JSON KEY TO USE`. Do NOT extract values for other fields unless explicitly stated by the user.
+2. **VALIDATION & CONVERSION:**
+   - For `annual_income`, `monthly_debt`, `loan_amount`: Extract the numeric value in Rupees.
+   - **HANDLE INDIAN FORMATS:**
+     - "1 Lakh" or "1L" -> 100000
+     - "1 Crore", "1 Cr", "1cr" -> 10000000
+     - "50k" -> 50000
+   - **HANDLE RANGES:** If user gives a range (e.g., "10-12 Lakhs", "100-500 cr"), calculate and use the **AVERAGE**.
+   - If input is ambiguous, ask for clarification.
+3. **NO HALLUCINATIONS:** Never assume a value (especially bankruptcy/defaults) from an unrelated answer.
+
 **MANDATORY VARIABLES:**
 1. `loan_amount` - Loan Amount (Rupees)
 2. `annual_income` - Annual Income (Rupees)
@@ -464,6 +494,7 @@ You are Creditsetu, an expert Indian AI Loan Consultant.
 **OUTPUT FORMAT (Always JSON, no markdown):**
 {
   "response_text": "Your response...",
+  "user_transcription": "Verbatim transcription of the user's audio input (if audio provided)",
   "extracted_updates": {"field_name": value},
   "is_ready": false
 }
@@ -493,10 +524,29 @@ def health_check():
 
 
 @app.post("/chat/init")
-@limiter.limit("10/minute")
+@limiter.limit("10000/day", key_func=whitelist_key)
+@limiter.limit("10/day", key_func=standard_key)
 def init_chat(request: Request, language: str = "en"):
     """Initialize a new chat session"""
-    session = sessions.create()
+    user_email = get_user_email(request)
+    session_id = None
+    chat_history = []
+    
+    # Try to resume last session
+    if user_email != "anonymous":
+        last_sid = get_latest_session(user_email)
+        if last_sid:
+            session_id = last_sid
+            chat_history = get_chat_history(session_id)
+            # Rehydrate session object
+            session = sessions.get(session_id)
+            if not session:
+                session = LoanSession(session_id=session_id)
+                sessions.set(session_id, session)
+    
+    if not session_id:
+        session = sessions.create()
+        session_id = session.session_id
     
     suggested_questions = [
         "Check my loan eligibility 🏦",
@@ -505,7 +555,9 @@ def init_chat(request: Request, language: str = "en"):
         "Analyze ₹5 Lakhs loan readiness ✅"
     ]
     
-    greeting = """**Welcome to CreditSetu AI** 👋
+    # Localized Greetings
+    greetings = {
+        "en": """**Welcome to CreditSetu AI** 👋
 
 I'm your AI loan consultant. Choose an option:
 
@@ -513,17 +565,85 @@ I'm your AI loan consultant. Choose an option:
 **2.** Improve Credit Score 📈
 **3.** Document Checklist 📄
 **4.** Full ₹5 Lakhs Audit ✅
+""",
+        "hi": """**क्रेडिटसेतु AI में आपका स्वागत है** 👋
+
+मैं आपका AI लोन सलाहकार हूँ। एक विकल्प चुनें:
+
+**1.** लोन पात्रता की जाँच करें 🏦
+**2.** क्रेडिट स्कोर सुधारें 📈
+**3.** दस्तावेज़ चेकलिस्ट 📄
+**4.** ₹5 लाख लोन ऑडिट ✅
+""",
+        "hinglish": """**CreditSetu AI mein aapka swagat hai** 👋
+
+Main aapka AI loan consultant hoon. Ek option chunein:
+
+**1.** Loan Eligibility check karein 🏦
+**2.** Credit Score improve karein 📈
+**3.** Document Checklist 📄
+**4.** Full ₹5 Lakhs Audit ✅
+""",
+        "te": """**క్రెడిట్‌సేతు AI కి స్వాగతం** 👋
+
+నేను మీ AI లోన్ సలహాదారుడిని. ఒక ఎంపికను ఎంచుకోండి:
+
+**1.** లోన్ అర్హతను తನಿఖీ చేయండి 🏦
+**2.** క్రెడిట్ స్కోర్ మెరుగుపరచండి 📈
+**3.** డాక్యుమెంట్ చెక్‌లిస్ట్ 📄
+**4.** పూర్తి ₹5 లక్షల ఆడిట్ ✅
+""",
+        "mr": """**क्रेडिटसेतु AI मध्ये आपले स्वागत आहे** 👋
+
+मी तुमचा AI कर्ज सल्लागार आहे. एक पर्याय निवडा:
+
+**1.** कर्ज पात्रता तपासा 🏦
+**2.** क्रेडिट स्कोर सुधारा 📈
+**3.** कागदपत्र चेकलिस्ट 📄
+**4.** पूर्ण ₹5 लाख ऑडिट ✅
+""",
+        "ta": """**கிரெடிட்சேது AI க்கு வரவேற்கிறோம்** 👋
+
+நான் உங்கள் AI கடன் ஆலோசகன். ஒரு விருப்பத்தைத் தேர்வு செய்யவும்:
+
+**1.** கடன் தகுதியைச் சரிபார்க்கவும் 🏦
+**2.** கிரெடிட் ஸ்கோரை மேம்படுத்தவும் 📈
+**3.** ஆவண சரிபார்ப்புப் பட்டியல் 📄
+**4.** முழுமையான ₹5 லட்சம் தಣிக்கை ✅
+""",
+        "kn": """**ಕ್ರೆಡಿಟ್‍ಸೇತು AI ಗೆ ಸ್ವಾಗತ** 👋
+
+ನಾನು ನಿಮ್ಮ AI ಸಾಲ ಸಲಹೆಗಾರ. ಒಂದು ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿ:
+
+**1.** ಸಾಲ ಅರ್ಹತೆಯನ್ನು ಪರಿಶೀಲಿಸಿ 🏦
+**2.** ಕ್ರೆಡಿಟ್ ಸ್ಕೋರ್ ಸುಧಾರಿಸಿ 📈
+**3.** ದಾಖಲೆ ಪರಿಶೀಲನಾ ಪಟ್ಟಿ 📄
+**4.** ಸಂಪೂರ್ಣ ₹5 ಲಕ್ಷ ಆಡಿಟ್ ✅
+""",
+        "bn": """**ক্রেডিটসেতু AI তে স্বাগতম** 👋
+
+আমি আপনার AI লোন উপদেষ্টা। একটি বিকল্প বেছে নিন:
+
+**1.** লোন যোগ্যতা পরীক্ষা করুন 🏦
+**2.** ক্রেডিট স্কোর উন্নত করুন 📈
+**3.** নথি চেকলিস্ট 📄
+**4.** সম্পূর্ণ ₹5 লক্ষ অডিট ✅
 """
+    }
+    
+    greeting = greetings.get(language, greetings["en"])
     
     return {
-        "session_id": session.session_id,
-        "message": greeting,
-        "suggested_questions": suggested_questions
+        "session_id": session_id,
+        "message": greeting if not chat_history else "Welcome back! I've restored your previous chat.",
+        "suggested_questions": suggested_questions,
+        "chat_history": chat_history
     }
 
 
 @app.post("/chat/voice")
-@limiter.limit("30/minute")
+@limiter.limit("10000/day", key_func=whitelist_key)
+@limiter.limit("10/day", key_func=standard_key)
 async def voice_chat(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -559,7 +679,22 @@ async def voice_chat(
     next_field = missing_fields[0] if missing_fields else None
     next_key = FIELD_TO_KEY.get(next_field) if next_field else None
     
-    lang_instruction = f"Respond in {language}." if language != "en" else ""
+    # Language Mapping for AI instructions
+    LANG_MAP = {
+        "en": "English",
+        "hi": "Hindi (Devanagari script)",
+        "hinglish": "Hinglish (Hindi written in Latin script)",
+        "te": "Telugu",
+        "mr": "Marathi",
+        "ta": "Tamil",
+        "kn": "Kannada",
+        "bn": "Bengali"
+    }
+    
+    target_lang = LANG_MAP.get(language, "English")
+    lang_instruction = f"CRITICAL: You MUST respond in {target_lang} ONLY, regardless of the language of the user's input. Do not switch to English unless the target language is English."
+    if language == "hinglish":
+        lang_instruction += " Keep it conversational and natural."
     
     dynamic_prompt = BASE_SYSTEM_INSTRUCTION + f"""
 
@@ -581,8 +716,12 @@ USER MESSAGE:
     if audio:
         audio_bytes = await audio.read()
         user_content.append({"mime_type": "audio/webm", "data": audio_bytes})
+        # Save user audio message (placeholder text for now)
+        # This will be replaced by the actual transcription from the LLM response
+        # save_message(session_id, "user", "[Audio Message]", get_user_email(request))
     elif text_input:
         user_content.append(text_input)
+        save_message(session_id, "user", text_input, get_user_email(request))
     else:
         raise HTTPException(status_code=400, detail="No input provided")
     
@@ -614,9 +753,14 @@ USER MESSAGE:
     is_ready = len(remaining) == 0 or llm_data.get("is_ready", False)
     
     resp_text = llm_data.get("response_text", "")
+    user_transcription = llm_data.get("user_transcription")
     chart_data = None
     report_url = None
     audio_url = None
+    
+    # Save transcription if available
+    if user_transcription:
+        save_message(session_id, "user", user_transcription, get_user_email(request))
     
     # Run audit if ready
     if is_ready:
@@ -661,8 +805,12 @@ USER MESSAGE:
     background_tasks.add_task(generate_tts_sync, resp_text, session_id)
     audio_url = f"/audio/{session_id}"
     
+    # Save assistant response
+    save_message(session_id, "assistant", resp_text, get_user_email(request))
+
     return ChatResponse(
         response_text=resp_text,
+        user_transcription=user_transcription,
         audio_url=audio_url,
         chart_data=chart_data,
         report_url=report_url
