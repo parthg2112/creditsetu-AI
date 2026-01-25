@@ -412,6 +412,23 @@ async def voice_chat_google(
     else:
         lang_instruction = f"IMPORTANT: Respond in {language} language only." if language != "en" else ""
     
+    # Map friendly field names to exact JSON keys
+    FIELD_TO_KEY = {
+        "Annual Income": "annual_income",
+        "Monthly Debt Payments": "monthly_debt",
+        "Requested Loan Amount": "loan_amount",
+        "Payment Reliability (0-60)": "payment_history_rating",
+        "Credit Card Utilization %": "credit_utilization",
+        "Credit History Length (Years)": "credit_history_years",
+        "Number of Active Credit Lines": "open_credit_lines",
+        "Recent Inquiries (Last 6 months)": "recent_inquiries",
+        "Bankruptcy History (Yes/No)": "bankruptcy_history",
+        "Loan Default History (Yes/No)": "defaults_history"
+    }
+    
+    # Get the exact key for the next field
+    next_key = FIELD_TO_KEY.get(next_field, None) if next_field else None
+    
     dynamic_instruction = BASE_SYSTEM_INSTRUCTION + f"""
     
     ===== CURRENT SESSION STATE =====
@@ -419,28 +436,20 @@ async def voice_chat_google(
     
     FIELDS STILL NEEDED: {missing_fields}
     
-    NEXT FIELD TO COLLECT: {next_field}
+    ===== CURRENT QUESTION =====
+    YOU ARE CURRENTLY ASKING ABOUT: "{next_field}"
+    THE EXACT JSON KEY TO USE: "{next_key}"
     
-    ===== CRITICAL EXTRACTION RULES =====
-    YOU MUST EXTRACT the user's answer into `extracted_updates` using this EXACT mapping:
-    - "Annual Income" -> {{"annual_income": <number>}}
-    - "Monthly Debt Payments" -> {{"monthly_debt": <number>}}
-    - "Requested Loan Amount" -> {{"loan_amount": <number>}}
-    - "Payment Reliability (0-60)" -> {{"payment_history_rating": <0-60>}}
-    - "Credit Card Utilization %" -> {{"credit_utilization": <0.0-1.0>}} (convert % to decimal)
-    - "Credit History Length (Years)" -> {{"credit_history_years": <number>}}
-    - "Number of Active Credit Lines" -> {{"open_credit_lines": <number>}}
-    - "Recent Inquiries (Last 6 months)" -> {{"recent_inquiries": <number>}}
-    - "Bankruptcy History (Yes/No)" -> {{"bankruptcy_history": 1 if Yes, 0 if No}}
-    - "Loan Default History (Yes/No)" -> {{"defaults_history": 1 if Yes, 0 if No}}
+    ===== CRITICAL EXTRACTION RULE =====
+    When the user answers, you MUST extract their answer using EXACTLY this format:
+    {{"extracted_updates": {{"{next_key}": <their_value>}}}}
     
-    EXAMPLE: If NEXT FIELD is "Number of Active Credit Lines" and user says "2", you MUST return:
-    {{"response_text": "Got it, 2 active credit lines...", "extracted_updates": {{"open_credit_lines": 2}}, "is_ready": false, "chart": null}}
+    DO NOT use any other key. The user's message is the answer to "{next_field}".
     
     ===== ACTION REQUIRED =====
-    1. Read the user's latest message.
-    2. If they provided ANY value for the NEXT FIELD, EXTRACT IT immediately.
-    3. Then ask for the NEXT missing field in {language} language.
+    1. Extract the user's answer into "{next_key}".
+    2. Acknowledge the value in your response.
+    3. Ask for the NEXT missing field.
     4. If ALL fields are collected, set "is_ready": true.
     
     {lang_instruction}
