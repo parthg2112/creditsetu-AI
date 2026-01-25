@@ -2,6 +2,7 @@ import os
 import uuid
 import json
 import base64
+import re  # ADDED: For robust JSON cleaning
 from typing import Dict, List, Optional, Any
 from io import BytesIO
 
@@ -82,6 +83,15 @@ def get_missing_fields(session: LoanSession) -> List[str]:
     if session.defaults_history is None: missing.append("Loan Default History (Yes/No)")
     
     return missing
+
+# --- ADDED HELPER: CLEAN JSON ---
+def clean_json_string(json_str: str) -> str:
+    """
+    Removes markdown code blocks and cleanup json string to prevent parsing errors.
+    """
+    cleaned = re.sub(r'```json\s*', '', json_str)
+    cleaned = re.sub(r'```\s*', '', cleaned)
+    return cleaned.strip()
 
 # --- 4. ENGINE: HEURISTIC CALCULATOR & LOGIC ---
 def calculate_score_and_decision(data: LoanSession):
@@ -286,22 +296,23 @@ def generate_pdf(session_id, score, decision, reason, plan, red_flags, strengths
     pdf.output(path)
     return filename
 
-# --- 6. THE DUAL-MODE SYSTEM PROMPT (INDIAN CONTEXT) ---
+# --- 6. THE DUAL-MODE SYSTEM PROMPT (UPDATED FOR ADVISORY & ROBUSTNESS) ---
 BASE_SYSTEM_INSTRUCTION = """
 You are Creditsetu, an expert Indian AI Loan Consultant.
 
-**YOUR DUAL ROLES:**
+**YOUR MODES (Auto-Switch based on context):**
 
-**MODE A: GENERAL CONSULTANT (Default)**
-- If the user asks general questions (e.g., "How much loan can I get with 50k salary?", "What is a good credit score?"), answer them directly.
-- **PRIVACY RULE:** NEVER ask the user to send, upload, or share physical documents (like ITR, Bank Statements, Aadhaar) in the chat.
+1. **ADVISORY & EDUCATION (Default for "How to", "Help me", "Education Loan"):**
+   - If user asks about improving scores or specific loan types (e.g. "Education Loan for daughter"), provide SMART ADVICE immediately.
+   - Do NOT force the full 10-variable collection unless they explicitly ask to "Check my Score" or "Audit my Profile".
+   - You can ask 1-2 relevant questions (e.g. "What is the course fee?" for edu loans) but keep it conversational.
 
-**MODE B: APPROVAL AGENT (Triggered by approval questions OR when collecting data)**
-- **TRIGGER:** If the user asks "Will I get approved?", "Check my score", or "Am I eligible?", OR if we are already collecting data, switch to data collection mode.
-- In this mode, collect the 10 Mandatory Variables one by one.
-- **CRITICAL:** When the user provides a number (e.g., "35 lacks", "250000", "₹5 Lakh"), YOU MUST extract it and put it in `extracted_updates`.
+2. **APPROVAL AGENT (Triggered by "Am I eligible?", "Check Score", or providing data):**
+   - In this mode, collect the 10 Mandatory Variables one by one.
+   - **CRITICAL:** When the user provides a number (e.g., "35 lacks", "250000", "₹5 Lakh"), YOU MUST extract it and put it in `extracted_updates`.
+   - **ROBUSTNESS:** If the user answers vaguely (e.g. "I don't have debt"), infer the value (e.g. `monthly_debt: 0`) and extract it.
 
-**MANDATORY VARIABLES (for Mode B):**
+**MANDATORY VARIABLES (for Mode 2 - Audit):**
 1. `loan_amount` - Loan Amount Needed (in Rupees)
 2. `annual_income` - Annual Income (in Rupees)
 3. `monthly_debt` - Monthly Debt Payments (in Rupees)
@@ -316,15 +327,12 @@ You are Creditsetu, an expert Indian AI Loan Consultant.
 **EXTRACTION EXAMPLES:**
 - User: "₹5 Lakh" -> `{"extracted_updates": {"loan_amount": 500000}}`
 - User: "35 lacks" -> `{"extracted_updates": {"annual_income": 3500000}}`
-- User: "250000" -> `{"extracted_updates": {"annual_income": 250000}}`
-- User: "10 lakhs per year" -> `{"extracted_updates": {"annual_income": 1000000}}`
 - User: "No EMIs" or "0" -> `{"extracted_updates": {"monthly_debt": 0}}`
-- User: "Under 30%" or "25%" -> `{"extracted_updates": {"credit_utilization": 0.25}}`
-- User: "No" for bankruptcy -> `{"extracted_updates": {"bankruptcy_history": 0}}`
+- User: "My score is low, help me" -> `{"response_text": "To improve your score, focus on paying dues on time. Do you want a full audit?"}` (No extraction needed unless numbers given)
 
-**OUTPUT JSON FORMAT (ALWAYS use this format):**
+**OUTPUT JSON FORMAT (ALWAYS use this format, NO Markdown):**
 {
-  "response_text": "Your helpful response asking for the next missing field...",
+  "response_text": "Your helpful response...",
   "extracted_updates": {"field_name": numeric_value},
   "is_ready": false,
   "chart": null
@@ -344,8 +352,8 @@ def init_chat(language: str = "en"):
     # Feature: Predefined Questions (Demo Set)
     suggested_questions = [
         "Analyze ₹12 Lakh Home Loan Eligibility 🏠",
-        "I earn ₹1L/month. What's my max loan? �",
-        "Check readiness for Business Loan �",
+        "I earn ₹1L/month. What's my max loan? 💰",
+        "Check readiness for Business Loan 💼",
         "Generate Comprehensive Audit PDF 📄"
     ]
     
@@ -386,7 +394,7 @@ async def voice_chat_google(
     if text_input and text_input.strip() in ["1", "2", "3", "4"]:
         shortcuts = {
             "1": "Am I eligible for a Personal Loan? Check my eligibility.",
-            "2": "How can I improve my CIBIL score?",
+            "2": "How can I improve my CIBIL score? Suggest ways.",
             "3": "What documents are required for a loan?",
             "4": "Check my readiness for a ₹5 Lakhs loan."
         }
@@ -397,8 +405,6 @@ async def voice_chat_google(
     next_field = missing_fields[0] if missing_fields else None
     
     # B. CONSTRUCT DYNAMIC PROMPT
-    # Strategy: If Audio Input -> Force English Response context (or Mixed).
-    # If Text Input -> Respect `language` (e.g. Hindi).
     force_english_response = (audio is not None)
     
     if force_english_response:
@@ -418,10 +424,9 @@ async def voice_chat_google(
     ===== ACTION REQUIRED =====
     1. Read the user's latest message below.
     2. If they provided a NUMBER or VALUE, extract it into `extracted_updates` using the appropriate field name.
-    3. For example, if NEXT FIELD TO COLLECT is "Annual Income" and user says "35 lacks", respond with:
-       {{"response_text": "Great, ₹35 Lakhs annual income noted...", "extracted_updates": {{"annual_income": 3500000}}, "is_ready": false, "chart": null}}
-    4. Then ask for the next missing field in {language} language.
-    5. If ALL fields are collected, set "is_ready": true.
+    3. If the user asks for ADVICE (e.g. "How to improve score", "Education loan"), answer them helpfully WITHOUT forcing the next field question immediately, unless they want an audit.
+    4. If collecting data: ask for the next missing field in {language} language.
+    5. If ALL fields are collected (or user explicitly asks to calculate result based on current data), set "is_ready": true.
     
     USER MESSAGE:
     """
@@ -436,18 +441,19 @@ async def voice_chat_google(
     elif text_input:
         user_content.append(text_input)
 
-    # C. CALL GEMINI
+    # C. CALL GEMINI (First Pass - Extraction & Conversation)
     try:
         response = model.generate_content(
             user_content,
             generation_config={"response_mime_type": "application/json"}
         )
-        print(f"Gemini Raw Response: {response.text[:500]}")
-        llm_data = json.loads(response.text)
+        # ADDED: Cleanup JSON string before parsing
+        clean_text = clean_json_string(response.text)
+        print(f"Gemini Raw Response: {clean_text[:500]}")
+        llm_data = json.loads(clean_text)
     except json.JSONDecodeError as je:
         print(f"JSON Parse Error: {je}")
         print(f"Raw text was: {response.text[:1000]}")
-        # Fallback: Try to extract just the response text
         return ChatResponse(response_text="I understood your question, but I'm having trouble formatting my response. Please try again.")
     except Exception as e:
         import traceback
@@ -456,7 +462,7 @@ async def voice_chat_google(
         return ChatResponse(response_text=f"I'm having trouble connecting to the brain. Error: {str(e)[:100]}")
 
     # D. UPDATE MEMORY
-    if "extracted_updates" in llm_data:
+    if "extracted_updates" in llm_data and llm_data["extracted_updates"]:
         session_dict = session.dict()
         session_dict.update(llm_data["extracted_updates"])
         SESSIONS[session_id] = LoanSession(**session_dict)
@@ -471,12 +477,37 @@ async def voice_chat_google(
     report_link = None
     chart = llm_data.get("chart")
 
-    # Feature: Automated Decision Engine
-    # Feature: Automated Decision Engine
+    # Feature: Automated Decision Engine + SMART ADVICE GENERATION
     if is_really_ready:
         score, decision, reason, plan, red_flags, strengths, radar_data = calculate_score_and_decision(session)
         
-        resp_text = f"Analyzed! \n\n**Score: {score}/900**\n**Decision: {decision}**\n\n{reason}\n\nI've generated a detailed report for you. Please check the dashboard on the right."
+        # --- NEW: ASK GEMINI TO GENERATE THE FINAL "SMART SUGGESTION" ---
+        # Instead of just using the hardcoded string, we feed the math back to Gemini
+        # to get a natural, helpful, and "smart" response.
+        final_synthesis_prompt = f"""
+        You are a smart financial advisor.
+        The system has calculated the following audit results for the user:
+        - CREDIT SCORE: {score}/900
+        - DECISION: {decision}
+        - KEY REASON: {reason}
+        - RED FLAGS: {', '.join(red_flags)}
+        - STRENGTHS: {', '.join(strengths)}
+        - SUGGESTED PLAN STEPS: {', '.join(plan)}
+        
+        TASK: Generate a warm, encouraging, and intelligent response for the user (in {language}).
+        - Announce the score and decision clearly.
+        - Explain *why* (using the reason and red flags).
+        - Provide the "Smart Suggestions" (using the plan steps but elaborating slightly).
+        - Tell them a detailed PDF report is ready.
+        """
+        
+        try:
+            # Quick second call for high-quality synthesis
+            synthesis_resp = model.generate_content(final_synthesis_prompt)
+            resp_text = synthesis_resp.text
+        except:
+            # Fallback to hardcoded if second call fails
+            resp_text = f"Analyzed! \n\n**Score: {score}/900**\n**Decision: {decision}**\n\n{reason}\n\nI've generated a detailed report for you."
         
         # Feature: PDF Report Generation
         fname = generate_pdf(session_id, score, decision, reason, plan, red_flags, strengths, radar_data)
@@ -491,7 +522,7 @@ async def voice_chat_google(
                 "redFlags": red_flags,
                 "strengths": strengths,
                 "recommendedActions": plan,
-                "summary": f"Based on your profile, your credit score is {score}. {reason} We recommend focusing on {plan[0] if plan else 'maintaining good habits'}."
+                "summary": f"Based on your profile, your credit score is {score}. {reason}"
             }
         }
     
@@ -500,7 +531,9 @@ async def voice_chat_google(
     try:
         # Force English for Voice Output as requested ("speech we can keep it to english only")
         tts_lang = 'en'
-        tts = gTTS(resp_text, lang=tts_lang)
+        # Strip markdown asterisks for cleaner TTS
+        clean_tts_text = resp_text.replace("**", "").replace("*", "")
+        tts = gTTS(clean_tts_text[:500], lang=tts_lang) # Limit TTS length
         mp3_fp = BytesIO()
         tts.write_to_fp(mp3_fp)
         mp3_fp.seek(0)
