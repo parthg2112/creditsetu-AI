@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { ActionPlan } from "@/components/dashboard/remediation/action-plan";
 import { ChatSidebar } from "@/components/dashboard/remediation/chat-sidebar";

@@ -5,11 +5,10 @@ WORKDIR /app
 # Enable bytecode compilation
 ENV UV_COMPILE_BYTECODE=1
 
-# Copy requirements first to cache dependencies
+# Install dependencies first to cache them
 COPY requirements.txt .
-
-# Install dependencies
-RUN uv pip install --system --no-cache -r requirements.txt
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system --no-cache -r requirements.txt
 
 # Copy application code
 COPY . .

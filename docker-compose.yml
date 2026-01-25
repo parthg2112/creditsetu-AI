@@ -14,11 +14,12 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "80:3000"
+      - "4021:3000"
     env_file:
       - ./frontend/.env
     environment:
       - NEXT_PUBLIC_PYTHON_BACKEND_URL=/api/python
+      - AUTH_TRUST_HOST=true
     depends_on:
       - backend
     restart: always

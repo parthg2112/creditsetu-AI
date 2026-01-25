@@ -4,7 +4,8 @@ WORKDIR /app
 # Install dependencies only when needed
 FROM base AS deps
 COPY package.json bun.lock ./
-RUN bun install
+RUN --mount=type=cache,id=bun,target=/root/.bun/install/cache \
+    bun install
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -15,6 +16,9 @@ COPY . .
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV DATABASE_URL=postgres://dummy:dummy@localhost:5432/dummy
+ENV NEXT_PUBLIC_SUPABASE_URL=https://dummy.supabase.co
+ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy
 
 RUN bun run build
 

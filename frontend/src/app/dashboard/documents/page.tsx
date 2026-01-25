@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useCallback } from "react";
 import { ProgressTracker } from "@/components/dashboard/progress-tracker";
 import { UploadZone } from "@/components/dashboard/upload-zone";

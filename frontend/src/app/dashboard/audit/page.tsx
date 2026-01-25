@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useEffect, useState } from "react";
 import { ScoreGauge } from "@/components/dashboard/audit/score-gauge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
