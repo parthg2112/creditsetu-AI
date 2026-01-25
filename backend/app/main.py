@@ -86,82 +86,200 @@ def get_missing_fields(session: LoanSession) -> List[str]:
 # --- 4. ENGINE: HEURISTIC CALCULATOR & LOGIC ---
 def calculate_score_and_decision(data: LoanSession):
     """
-    The Mathematical Brain. Returns (Score, Decision, Reason, Plan).
+    The Mathematical Brain. Returns detailed audit data.
     """
     score = 300 # Baseline
+    red_flags = []
+    strengths = []
+    plan = []
     
-    # Safe defaults to prevent math errors
+    # Safe defaults
     pay_hist = data.payment_history_rating or 0
     util = data.credit_utilization or 0.5
     hist_len = data.credit_history_years or 0
     lines = data.open_credit_lines or 0
     inq = data.recent_inquiries or 0
+    monthly_income = (data.annual_income or 1) / 12
+    dti = (data.monthly_debt or 0) / monthly_income if monthly_income > 0 else 0.0
     
-    # 1. Payment History (35%)
-    score += (pay_hist / 60) * 210
+    # 1. Payment History (35%) - Max 210
+    score_payment = (pay_hist / 60) * 210
+    score += score_payment
+    if pay_hist < 40: red_flags.append("Payment history is below average. Avoid missing any future payments.")
+    else: strengths.append("Strong payment reliability record.")
     
-    # 2. Utilization (30%)
+    # 2. Utilization (30%) - Max 180
+    score_util = 0
     if util <= 1.0:
-        score += 180 * (1.0 - util)
+        score_util = 180 * (1.0 - util)
+        score += score_util
+    if util > 0.4: red_flags.append(f"Credit utilization is high ({int(util*100)}%). Try to keep it under 30%.")
+    else: strengths.append("Healthy credit utilization ratio.")
         
-    # 3. History Length (15%)
-    score += min(hist_len, 10) * 9
+    # 3. History Length (15%) - Max 90
+    score_age = min(hist_len, 10) * 9
+    score += score_age
+    if hist_len < 3: plan.append("Keep your oldest accounts open to build credit history length.")
     
-    # 4. Credit Mix (10%)
-    if lines >= 5: score += 60
-    elif lines >= 2: score += 40
-    else: score += 20
+    # 4. Credit Mix (10%) - Max 60
+    score_mix = 0
+    if lines >= 5: score_mix = 60
+    elif lines >= 2: score_mix = 40
+    else: score_mix = 20
+    score += score_mix
         
-    # 5. New Credit (10%)
-    if inq == 0: score += 60
-    elif inq <= 2: score += 40
-    else: score += 20
+    # 5. New Credit (10%) - Max 60
+    score_new = 0
+    if inq == 0: score_new = 60
+    elif inq <= 2: score_new = 40
+    else: score_new = 20
+    score += score_new
+    if inq > 3: red_flags.append(f"Too many recent inquiries ({inq}). Pause applying for new credit.")
     
     # Critical Penalties
-    if data.bankruptcy_history == 1: score -= 150
-    if data.defaults_history == 1: score -= 100
+    if data.bankruptcy_history == 1: 
+        score -= 150
+        red_flags.append("Bankruptcy history significantly impacts your score.")
+    if data.defaults_history == 1: 
+        score -= 100
+        red_flags.append("Past loan defaults are a major negative factor.")
     
+    if dti > 0.4: red_flags.append(f"High Debt-to-Income Ratio ({int(dti*100)}%). Banks prefer <40%.")
+    elif dti < 0.3: strengths.append("Excellent Debt-to-Income ratio.")
+
     final_score = int(max(300, min(900, score)))
 
     # Decision Logic
     decision = "APPROVED"
     reason = "Your profile meets our lending criteria."
-    plan = []
     
-    monthly_income = (data.annual_income or 1) / 12
-    dti = (data.monthly_debt or 0) / monthly_income if monthly_income > 0 else 1.0
-    
-    # Rejection Logic
     if final_score < 650:
         decision = "REJECTED"
-        reason = f"Credit Score {final_score} is too low (Min 650)."
-        plan.append("Pay down credit card balances to <30%.")
-        plan.append("No new loan applications for 6 months.")
+        reason = f"Credit Score {final_score} is below the 650 threshold."
+        plan.append("Wait 6 months before applying to improve score.")
     elif dti > 0.50:
         decision = "REJECTED"
-        reason = f"Debt-to-Income Ratio {dti:.2f} is too high (Max 0.50)."
-        plan.append("Consolidate existing debts to lower monthly EMI.")
+        reason = f"DTI {int(dti*100)}% is too high (Max 50%)."
+        plan.append("Clear robust debts to reduce monthly obligations.")
     
-    # Indian Context: ITR Advice (Included in Report)
-    plan.append("IMPORTANT: Ensure your last 2 years of ITR (Income Tax Returns) match these income figures for final bank verification.")
+    # Indian context advice
+    plan.append("Ensure your ITR reflects this income to pass bank verification.")
+
+    # Radar Data Construction
+    radar_data = [
+        {"letter": "Payment", "frequency": int((score_payment/210)*100)},
+        {"letter": "Usage", "frequency": int((score_util/180)*100)},
+        {"letter": "Age", "frequency": int((score_age/90)*100)},
+        {"letter": "Mix", "frequency": int((score_mix/60)*100)},
+        {"letter": "New Credit", "frequency": int((score_new/60)*100)},
+        {"letter": "DTI", "frequency": max(0, 100 - int(dti*100))}
+    ]
         
-    return final_score, decision, reason, plan
+    return final_score, decision, reason, plan, red_flags, strengths, radar_data
 
 # --- 5. ENGINE: PDF GENERATOR ---
-def generate_pdf(session_id, score, decision, reason, plan):
+def generate_pdf(session_id, score, decision, reason, plan, red_flags, strengths, radar_data):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
-    pdf.cell(200, 10, txt="Creditsetu AI - Consultation Report", ln=1, align='C')
+    
+    # --- HEADER ---
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(0, 10, txt="LENDREADY AI - CREDIT READINESS AUDIT", ln=1, align='C')
+    pdf.set_font("Arial", 'I', 10)
+    pdf.cell(0, 10, txt=f"Session Reference: {session_id[:8]}...", ln=1, align='C')
     pdf.ln(10)
-    pdf.cell(0, 10, txt=f"Final Decision: {decision}", ln=1)
-    pdf.cell(0, 10, txt=f"Calculated Credit Score: {score}", ln=1)
-    pdf.cell(0, 10, txt=f"Primary Reason: {reason}", ln=1)
-    pdf.ln(10)
-    pdf.cell(0, 10, txt="Recommended Actions & Documentation:", ln=1)
-    for p in plan:
-        pdf.cell(0, 10, txt=f"- {p}", ln=1)
+    
+    # --- EXECUTIVE SUMMARY ---
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, txt="1. EXECUTIVE SUMMARY", ln=1, fill=True)
+    pdf.ln(2)
+    
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(50, 10, txt=f"Credit Score: {score}/900", ln=1)
+    
+    # Visual Score Bar (ASCII-ish)
+    # Draw gray bar
+    pdf.set_fill_color(200, 200, 200)
+    pdf.rect(10, pdf.get_y(), 180, 5, 'F')
+    # Draw score bar
+    score_pct = (score - 300) / 600
+    if score >= 750: pdf.set_fill_color(100, 180, 100) # Green
+    elif score >= 650: pdf.set_fill_color(200, 200, 100) # Yellow
+    else: pdf.set_fill_color(200, 100, 100) # Red
+    pdf.rect(10, pdf.get_y(), 180 * score_pct, 5, 'F')
+    pdf.ln(8)
+    
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, txt=f"Decision: {decision}", ln=1)
+    pdf.set_font("Arial", '', 11)
+    pdf.multi_cell(0, 7, txt=f"Reasoning: {reason}")
+    pdf.ln(5)
+    
+    # --- FACTOR ANALYSIS ---
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, txt="2. DETAILED FACTOR ANALYSIS", ln=1, fill=True)
+    pdf.ln(2)
+    
+    pdf.set_font("Arial", '', 10)
+    # Table Header
+    pdf.cell(80, 8, "Factor", 1)
+    pdf.cell(40, 8, "Impact", 1)
+    pdf.cell(70, 8, "Assessment", 1)
+    pdf.ln()
+    
+    for item in radar_data:
+        name = item['letter']
+        val = item['frequency']
+        status = "Good" if val > 70 else "Average" if val > 40 else "Needs Work"
+        pdf.cell(80, 8, f" {name}", 1)
+        pdf.cell(40, 8, f" {val}/100", 1)
+        pdf.cell(70, 8, f" {status}", 1)
+        pdf.ln()
+    pdf.ln(5)
+
+    # --- RED FLAGS ---
+    if red_flags:
+        pdf.set_fill_color(255, 235, 235) # Light Red
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, txt="3. CRITICAL RISK FACTORS (Red Flags)", ln=1, fill=True)
+        pdf.ln(2)
+        pdf.set_font("Arial", '', 11)
+        pdf.set_text_color(200, 50, 50)
+        for flag in red_flags:
+            pdf.multi_cell(0, 7, txt=f"• {flag}")
+        pdf.set_text_color(0, 0, 0)
+        pdf.ln(5)
         
+    # --- STRENGTHS ---
+    if strengths:
+        pdf.set_fill_color(235, 255, 235) # Light Green
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, txt="4. CREDIT STRENGTHS", ln=1, fill=True)
+        pdf.ln(2)
+        pdf.set_font("Arial", '', 11)
+        pdf.set_text_color(50, 150, 50)
+        for s in strengths:
+            pdf.multi_cell(0, 7, txt=f"• {s}")
+        pdf.set_text_color(0, 0, 0)
+        pdf.ln(5)
+
+    # --- ROADMAP ---
+    pdf.set_fill_color(240, 240, 250) # Light Blue
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, txt="5. RECOMMENDED ACTION PLAN", ln=1, fill=True)
+    pdf.ln(2)
+    pdf.set_font("Arial", '', 11)
+    for p in plan:
+        pdf.multi_cell(0, 7, txt=f"• {p}")
+    pdf.ln(5)
+    
+    # Footer disclaimer
+    pdf.set_y(-30)
+    pdf.set_font("Arial", 'I', 8)
+    pdf.cell(0, 10, "This report is generated by AI and is indicative only. Not a legal financial document.", align='C')
+
     filename = f"report_{session_id}.pdf"
     path = f"backend/data/{filename}"
     os.makedirs("backend/data", exist_ok=True)
@@ -216,24 +334,37 @@ You are Creditsetu, an expert Indian AI Loan Consultant.
 # --- 7. API ENDPOINTS ---
 
 @app.post("/chat/init")
-def init_chat():
+def init_chat(language: str = "en"):
     """
     Initializes a new session and sends Predefined Questions to the Frontend.
     """
     sid = str(uuid.uuid4())
     SESSIONS[sid] = LoanSession(session_id=sid)
     
-    # Feature: Predefined Questions
+    # Feature: Predefined Questions (Demo Set)
     suggested_questions = [
-        "How much personal loan can I get with ₹50k salary?",
-        "Check my Loan Approval Probability",
-        "What documents do I need for a Home Loan?",
-        "How do I improve my CIBIL score?"
+        "Analyze ₹12 Lakh Home Loan Eligibility 🏠",
+        "I earn ₹1L/month. What's my max loan? �",
+        "Check readiness for Business Loan �",
+        "Generate Comprehensive Audit PDF 📄"
     ]
+    
+    greeting = """**Welcome to CreditSetu AI.** 👋
+
+I am your personal financial auditor. To get started, type a number:
+
+**1.** Check Loan Eligibility 🏦\n
+**2.** Improve Credit Score 📈\n
+**3.** Document Checklist 📄\n
+**4.** Full Audit for ₹5 Lakhs ✅\n
+"""
+    
+    if language != "en":
+        greeting += f"\n\n(Note: I will respond in {language.upper()} from now on)"
     
     return {
         "session_id": sid, 
-        "message": "Namaste! I am your AI Loan Consultant. You can ask me general questions about loans, ITR, or EMI. \n\nIf you want a full approval check, just ask 'Will I get approved?'",
+        "message": greeting,
         "suggested_questions": suggested_questions
     }
 
@@ -241,7 +372,8 @@ def init_chat():
 async def voice_chat_google(
     session_id: str = Form(...),
     audio: UploadFile = File(None),
-    text_input: str = Form(None)
+    text_input: str = Form(None),
+    language: str = Form("en")
 ):
     """
     Multimodal Endpoint: Accepts Voice (Audio) or Text -> Gemini -> Logic -> TTS -> Response.
@@ -250,11 +382,30 @@ async def voice_chat_google(
         SESSIONS[session_id] = LoanSession(session_id=session_id)
     session = SESSIONS[session_id]
 
+    # Feature: Quick Shortcuts (1, 2, 3, 4)
+    if text_input and text_input.strip() in ["1", "2", "3", "4"]:
+        shortcuts = {
+            "1": "Am I eligible for a Personal Loan? Check my eligibility.",
+            "2": "How can I improve my CIBIL score?",
+            "3": "What documents are required for a loan?",
+            "4": "Check my readiness for a ₹5 Lakhs loan."
+        }
+        text_input = shortcuts[text_input.strip()]
+
     # A. IDENTIFY MISSING FIELDS
     missing_fields = get_missing_fields(session)
     next_field = missing_fields[0] if missing_fields else None
     
     # B. CONSTRUCT DYNAMIC PROMPT
+    # Strategy: If Audio Input -> Force English Response context (or Mixed).
+    # If Text Input -> Respect `language` (e.g. Hindi).
+    force_english_response = (audio is not None)
+    
+    if force_english_response:
+        lang_instruction = "IMPORTANT: Respond in English language only."
+    else:
+        lang_instruction = f"IMPORTANT: Respond in {language} language only." if language != "en" else ""
+    
     dynamic_instruction = BASE_SYSTEM_INSTRUCTION + f"""
     
     ===== CURRENT SESSION STATE =====
@@ -269,7 +420,7 @@ async def voice_chat_google(
     2. If they provided a NUMBER or VALUE, extract it into `extracted_updates` using the appropriate field name.
     3. For example, if NEXT FIELD TO COLLECT is "Annual Income" and user says "35 lacks", respond with:
        {{"response_text": "Great, ₹35 Lakhs annual income noted...", "extracted_updates": {{"annual_income": 3500000}}, "is_ready": false, "chart": null}}
-    4. Then ask for the next missing field.
+    4. Then ask for the next missing field in {language} language.
     5. If ALL fields are collected, set "is_ready": true.
     
     USER MESSAGE:
@@ -321,27 +472,35 @@ async def voice_chat_google(
     chart = llm_data.get("chart")
 
     # Feature: Automated Decision Engine
+    # Feature: Automated Decision Engine
     if is_really_ready:
-        score, decision, reason, plan = calculate_score_and_decision(session)
+        score, decision, reason, plan, red_flags, strengths, radar_data = calculate_score_and_decision(session)
         
-        resp_text = f"Thank you! I have analyzed your profile. \n\nCalculated Credit Score: {score}\nDecision: {decision}\n\nReason: {reason}"
+        resp_text = f"Analyzed! \n\n**Score: {score}/900**\n**Decision: {decision}**\n\n{reason}\n\nI've generated a detailed report for you. Please check the dashboard on the right."
         
         # Feature: PDF Report Generation
-        fname = generate_pdf(session_id, score, decision, reason, plan)
+        fname = generate_pdf(session_id, score, decision, reason, plan, red_flags, strengths, radar_data)
         report_link = f"/download/{fname}"
         
-        # Feature: Smart Visualization Data
+        # Feature: Smart Visualization Data - FULL AUDIT
         chart = {
-            "type": "doughnut",
-            "labels": ["Score", "Max Potential"],
-            "data": [score, 900-score],
-            "colors": ["#4CAF50", "#E0E0E0"]
+            "type": "audit_complete",
+            "data": {
+                "healthScore": int((score - 300) / 600 * 100),
+                "radarData": radar_data,
+                "redFlags": red_flags,
+                "strengths": strengths,
+                "recommendedActions": plan,
+                "summary": f"Based on your profile, your credit score is {score}. {reason} We recommend focusing on {plan[0] if plan else 'maintaining good habits'}."
+            }
         }
     
     # F. TTS GENERATION (Feature: Voice Output)
     audio_b64 = None
     try:
-        tts = gTTS(resp_text, lang='en')
+        # Force English for Voice Output as requested ("speech we can keep it to english only")
+        tts_lang = 'en'
+        tts = gTTS(resp_text, lang=tts_lang)
         mp3_fp = BytesIO()
         tts.write_to_fp(mp3_fp)
         mp3_fp.seek(0)

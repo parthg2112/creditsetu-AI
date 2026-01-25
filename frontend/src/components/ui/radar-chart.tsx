@@ -62,6 +62,8 @@ export interface RadarChartComponentProps {
   getValue: (d: LetterFrequency) => number;
 }
 
+import { Text } from '@visx/text';
+
 export const Component: React.FC<RadarChartComponentProps> = ({
   width,
   height,
@@ -76,7 +78,6 @@ export const Component: React.FC<RadarChartComponentProps> = ({
   const yMax = height - margin.top - margin.bottom;
   const radius = Math.min(xMax, yMax) / 2;
 
-
   if (radius <= 0) return null;
 
   const radialScale = scaleLinear<number>({
@@ -86,7 +87,7 @@ export const Component: React.FC<RadarChartComponentProps> = ({
 
   const yScale = scaleLinear<number>({
     range: [0, radius],
-    domain: [0, Math.max(...data.map(getValue), 0)],
+    domain: [0, Math.max(...data.map(getValue), 0)], // Use dynamic max
   });
 
   const webs = genAngles(data.length);
@@ -126,6 +127,31 @@ export const Component: React.FC<RadarChartComponentProps> = ({
         {polygonDataPoints.points.map((point, i) => (
           <circle key={`radar-point-${i}`} cx={point.x} cy={point.y} r={4} fill={pumpkin} />
         ))}
+        {/* Axis Labels */}
+        {axisLineEndpoints.map((point, i) => {
+          const angle = (i * 2 * Math.PI) / data.length;
+          const x = point.x * 1.2;
+          const y = point.y * 1.2;
+          // Calculate anchor based on position
+          let anchor: 'start' | 'middle' | 'end' = 'middle';
+          if (x > 10) anchor = 'start';
+          else if (x < -10) anchor = 'end';
+
+          return (
+            <Text
+              key={`label-${i}`}
+              x={x}
+              y={y}
+              textAnchor={anchor}
+              verticalAnchor="middle"
+              fontSize={11}
+              fontWeight="bold"
+              fill="#374151" // Text gray
+            >
+              {data[i].letter}
+            </Text>
+          );
+        })}
       </Group>
     </svg>
   );

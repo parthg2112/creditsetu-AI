@@ -79,6 +79,33 @@
     filter: blur(0);
     }
   }
+  @keyframes worm1 {
+  from {
+    stroke-dashoffset: 0;
+    }
+  50% {
+    animation-timing-function: steps(1);
+    stroke-dashoffset: -358;
+    }
+  50.01% {
+    animation-timing-function: linear;
+    stroke-dashoffset: 358;
+    }
+  to {
+    stroke-dashoffset: 0;
+    }
+  }
+  @keyframes worm2 {
+  from {
+    stroke-dashoffset: 358;
+    }
+  50% {
+    stroke-dashoffset: 0;
+    }
+  to {
+    stroke-dashoffset: -358;
+    }
+  }
 }
 
 :root {
@@ -205,4 +232,23 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+@keyframes worm1 {
+  from { stroke-dashoffset: 0; }
+  50% { stroke-dashoffset: -358; }
+  to { stroke-dashoffset: -716; }
+}
+
+@keyframes worm2 {
+  from { stroke-dashoffset: 358; }
+  50% { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -358; }
+}
+
+.animate-worm1 {
+  animation: worm1 2s linear infinite;
+}
+
+.animate-worm2 {
+  animation: worm2 2s linear infinite;
 }

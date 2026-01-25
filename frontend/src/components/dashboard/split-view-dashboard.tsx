@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, FormEvent, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3 } from "lucide-react";
+import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -10,7 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
 import { Component as RadarChart, chartBackground } from "@/components/ui/radar-chart";
 import { AnimatedRadialChart } from "@/components/ui/animated-radial-chart";
+import { WormLoader } from "@/components/ui/worm-loader";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/language-context";
 
 // Chat message type
 interface Message {
@@ -78,15 +80,7 @@ const INITIAL_PARAMS: CreditParams = {
 };
 
 export function SplitViewDashboard() {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: "welcome",
-            role: "assistant",
-            content: "Welcome to **CreditSetu AI**! 🏦\n\nI'll help you assess your loan readiness and calculate your credit score. Let's start with the basics.\n\n**How much loan are you looking for?**",
-            type: "quick-reply",
-            quickReplies: ["₹5 Lakh", "₹10 Lakh", "₹25 Lakh", "₹50 Lakh+", "₹1 Crore+"]
-        }
-    ]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [stage, setStage] = useState<OnboardingStage>("loan-amount");
@@ -95,14 +89,25 @@ export function SplitViewDashboard() {
     const [mobileTab, setMobileTab] = useState<"chat" | "dashboard">("chat");
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [reportUrl, setReportUrl] = useState<string | null>(null);
+
     const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+    const [isRecording, setIsRecording] = useState(false);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+
+    // Global Language State
+    const { language, t } = useLanguage();
+
+    const hasInitialized = useRef(false);
 
     // Initialize Chat Session
     useEffect(() => {
         const initChat = async () => {
+            if (hasInitialized.current) return;
+            hasInitialized.current = true;
+
             try {
-                const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/init`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/init?language=${language}`, {
                     method: 'POST'
                 });
                 const data = await response.json();
@@ -322,6 +327,92 @@ export function SplitViewDashboard() {
         setMobileTab("dashboard");
     };
 
+    // Voice Recording Functions
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            const chunks: BlobPart[] = [];
+
+            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                await sendAudioToBackend(audioBlob);
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            alert("Could not access microphone.");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+        }
+    };
+
+    const sendAudioToBackend = async (audioBlob: Blob) => {
+        if (!sessionId) return;
+        setIsLoading(true);
+
+        // Optimistic update
+        addMessage({
+            role: "user",
+            content: t('voice_message')
+        });
+
+        const formData = new FormData();
+        formData.append("session_id", sessionId);
+        formData.append("audio", audioBlob, "recording.webm");
+        formData.append("language", language);
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/voice`, {
+                method: "POST",
+                body: formData,
+            });
+            const data = await response.json();
+
+            // Handle Response
+            addMessage({ role: "assistant", content: data.response_text });
+
+            if (data.chart_data?.type === "audit_complete") {
+                const audit = data.chart_data.data;
+                setAuditData({
+                    healthScore: audit.healthScore,
+                    status: "ready",
+                    redFlags: audit.redFlags,
+                    strengths: audit.strengths,
+                    summary: audit.summary,
+                    recommendedActions: audit.recommendedActions,
+                    radarData: audit.radarData
+                });
+                setMobileTab("dashboard");
+            }
+
+            if (data.report_url) {
+                const fullUrl = `${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}${data.report_url}`;
+                setReportUrl(fullUrl);
+                addMessage({
+                    role: "system",
+                    content: `Your detailed Loan Readiness Report has been generated. You can download it below. [Download PDF](${fullUrl})`
+                });
+            }
+
+        } catch (error) {
+            console.error("Error sending audio:", error);
+            addMessage({ role: "system", content: "Something went wrong with voice processing. Please try again." });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const sendMessageToBackend = async (text: string) => {
         if (!sessionId) return;
         setIsLoading(true);
@@ -330,6 +421,7 @@ export function SplitViewDashboard() {
             const formData = new FormData();
             formData.append("session_id", sessionId);
             formData.append("text_input", text);
+            formData.append("language", language);
 
             const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/voice`, {
                 method: "POST",
@@ -347,25 +439,16 @@ export function SplitViewDashboard() {
             // Handle Chart Data
             if (data.chart_data) {
                 // Determine if we need to switch to dashboard to show result
-                if (data.chart_data.type === "doughnut" || data.chart_data.type === "bar") {
-                    const score = data.chart_data.data[0];
-                    const healthScore = Math.round(((score - 300) / 600) * 100);
-
+                if (data.chart_data.type === "audit_complete") {
+                    const audit = data.chart_data.data;
                     setAuditData({
-                        healthScore,
+                        healthScore: audit.healthScore,
                         status: "ready",
-                        redFlags: [],
-                        strengths: [],
-                        summary: data.response_text,
-                        recommendedActions: [],
-                        radarData: [
-                            { letter: "Payment", frequency: Math.random() * 40 + 60 },
-                            { letter: "Usage", frequency: Math.random() * 40 + 60 },
-                            { letter: "Age", frequency: Math.random() * 40 + 60 },
-                            { letter: "Mix", frequency: Math.random() * 40 + 60 },
-                            { letter: "New Credit", frequency: Math.random() * 40 + 60 },
-                            { letter: "DTI", frequency: Math.random() * 40 + 60 }
-                        ]
+                        redFlags: audit.redFlags,
+                        strengths: audit.strengths,
+                        summary: audit.summary,
+                        recommendedActions: audit.recommendedActions,
+                        radarData: audit.radarData
                     });
                     setMobileTab("dashboard");
                 }
@@ -373,10 +456,11 @@ export function SplitViewDashboard() {
 
             // Handle Report URL
             if (data.report_url) {
-                setReportUrl(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}${data.report_url}`);
+                const fullUrl = `${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}${data.report_url}`;
+                setReportUrl(fullUrl);
                 addMessage({
                     role: "system",
-                    content: "📄 Your Loan Readiness Report is ready!"
+                    content: `📄 **Report Ready!**\n\nYour detailed Loan Readiness Report has been generated. You can download it below. [Download PDF](${fullUrl})`
                 });
             }
 
@@ -478,7 +562,7 @@ export function SplitViewDashboard() {
                 <div>
                     <h3 className="font-semibold text-[15px] text-[#1F1E1D] dark:text-[#ECECEC]">CreditSetu AI</h3>
                     <p className="text-xs font-medium text-green-600 dark:text-green-500">
-                        {isLoading ? "Analyzing..." : "Online"}
+                        {isLoading ? t('analyzing') : t('online')}
                     </p>
                 </div>
             </div>
@@ -517,6 +601,23 @@ export function SplitViewDashboard() {
                                 {msg.role === 'assistant' ? (
                                     <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:text-[14px] prose-strong:text-[#1F1E1D] dark:prose-strong:text-[#ECECEC]">
                                         <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                    </div>
+                                ) : msg.role === 'system' ? (
+                                    <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2 text-[#D46B4F] font-medium">
+                                            <Sparkles className="h-4 w-4" />
+                                            <span>{t('report_ready')}</span>
+                                        </div>
+                                        <p className="text-muted-foreground">{msg.content.replace(/\[Download PDF\]\(.*\)/, '')}</p>
+                                        {reportUrl && (
+                                            <Button
+                                                onClick={() => window.open(reportUrl, '_blank')}
+                                                className="mt-2 bg-[#3D4F6F] hover:bg-[#2A3B52] text-white w-full flex items-center justify-center gap-2"
+                                            >
+                                                <BarChart3 className="h-4 w-4" />
+                                                {t('download_pdf')}
+                                            </Button>
+                                        )}
                                     </div>
                                 ) : (
                                     <span className="text-[14px]">{msg.content}</span>
@@ -572,12 +673,28 @@ export function SplitViewDashboard() {
                 `}>
                     <input
                         type="text"
-                        placeholder={stage === "complete" ? "Ask me anything about your credit score..." : "Type a message..."}
+                        placeholder={stage === "complete" ? t('ask_anything') : t('type_message')}
                         className="flex-1 bg-transparent border-0 outline-none text-[15px] text-[#1F1E1D] dark:text-[#ECECEC] placeholder:text-[#9CA3AF] dark:placeholder:text-[#6B7280] py-1.5"
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
                         disabled={isLoading || (stage !== "complete" && stage !== "loan-amount")}
                     />
+
+                    {/* Mic Button */}
+                    <button
+                        type="button"
+                        onClick={isRecording ? stopRecording : startRecording}
+                        className={`
+                            h-8 w-8 rounded-xl shrink-0 flex items-center justify-center transition-all duration-200
+                            ${isRecording
+                                ? 'bg-red-500 text-white animate-pulse shadow-md'
+                                : 'text-[#9CA3AF] hover:text-[#D46B4F] hover:bg-[#F3F4F6] dark:hover:bg-[#30302E]'}
+                        `}
+                        disabled={isLoading}
+                    >
+                        <Mic className="h-4 w-4" />
+                    </button>
+
                     <button
                         type="submit"
                         className={`
@@ -596,7 +713,7 @@ export function SplitViewDashboard() {
                 </p>
             </form>
         </div>
-    ), [messages, isLoading, inputValue, stage]);
+    ), [messages, isLoading, inputValue, stage, language]);
 
     // Render the dashboard panel - memoized to prevent re-renders
     const dashboardPanel = useMemo(() => (
@@ -612,14 +729,13 @@ export function SplitViewDashboard() {
                         className="h-full flex flex-col items-center justify-center text-center"
                     >
                         <div className="relative">
-                            <div className="absolute inset-0 bg-gradient-to-r from-[#3D4F6F]/10 to-[#5A6F8F]/10 blur-3xl rounded-full" />
-                            <div className="relative p-10 rounded-3xl bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-lg">
-                                <BarChart3 className="h-16 w-16 text-[#3D4F6F]/40 mx-auto mb-5" />
-                                <h3 className="font-serif text-xl font-bold text-[#3D4F6F] dark:text-slate-200">
-                                    Waiting for Analysis
+                            <div className="relative p-10 rounded-3xl">
+                                <WormLoader />
+                                <h3 className="font-serif text-xl font-bold text-[#3D4F6F] dark:text-slate-200 mt-6">
+                                    {t('thinking')}
                                 </h3>
-                                <p className="text-sm text-[#6B7280] mt-3 max-w-xs">
-                                    Complete the chat to see your personalized loan readiness dashboard.
+                                <p className="text-sm text-[#6B7280] mt-3 max-w-xs mx-auto">
+                                    {t('online')}
                                 </p>
                             </div>
                         </div>
@@ -647,45 +763,49 @@ export function SplitViewDashboard() {
                             </p>
                         </motion.div>
 
-                        {/* Health Score - Animated Radial Chart */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.2 }}
-                        >
-                            <Card className="p-6 bg-gradient-to-br from-[#3D4F6F] to-[#2A3B52] border-0 shadow-xl">
-                                <h3 className="font-semibold text-sm text-white/70 mb-2">Health Score</h3>
-                                <div className="flex justify-center items-center py-4">
-                                    <AnimatedRadialChart
-                                        value={auditData.healthScore}
-                                        size={280}
-                                        duration={1.5}
-                                    />
-                                </div>
-                                <p className="text-center text-white/80 text-sm mt-2">
-                                    {auditData.healthScore >= 70 ? "Excellent" : auditData.healthScore >= 50 ? "Good" : "Needs Improvement"} Loan Readiness
-                                </p>
-                            </Card>
-                        </motion.div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Health Score - Animated Radial Chart */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="h-full"
+                            >
+                                <Card className="p-6 bg-gradient-to-br from-[#3D4F6F] to-[#2A3B52] border-0 shadow-xl h-full flex flex-col justify-center">
+                                    <h3 className="font-semibold text-sm text-white/70 mb-2">Health Score</h3>
+                                    <div className="flex justify-center items-center py-4">
+                                        <AnimatedRadialChart
+                                            value={auditData.healthScore}
+                                            size={220}
+                                            duration={1.5}
+                                        />
+                                    </div>
+                                    <p className="text-center text-white/80 text-sm mt-2">
+                                        {auditData.healthScore >= 70 ? "Excellent" : auditData.healthScore >= 50 ? "Good" : "Needs Improvement"} Loan Readiness
+                                    </p>
+                                </Card>
+                            </motion.div>
 
-                        {/* Readiness Radar */}
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.3 }}
-                        >
-                            <Card className="p-6 bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-md">
-                                <h3 className="font-semibold text-sm text-[#3D4F6F] dark:text-slate-300 mb-4">Readiness Factors</h3>
-                                <div className="flex justify-center items-center">
-                                    <RadarChart
-                                        width={280}
-                                        height={280}
-                                        data={auditData.radarData}
-                                        getValue={(d) => d.frequency}
-                                    />
-                                </div>
-                            </Card>
-                        </motion.div>
+                            {/* Readiness Radar */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="h-full"
+                            >
+                                <Card className="p-6 bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-md h-full flex flex-col justify-center">
+                                    <h3 className="font-semibold text-sm text-[#3D4F6F] dark:text-slate-300 mb-4">Readiness Factors</h3>
+                                    <div className="flex justify-center items-center">
+                                        <RadarChart
+                                            width={220}
+                                            height={220}
+                                            data={auditData.radarData}
+                                            getValue={(d) => d.frequency}
+                                        />
+                                    </div>
+                                </Card>
+                            </motion.div>
+                        </div>
 
                         {/* Summary & Recommendations */}
                         <motion.div
@@ -704,12 +824,12 @@ export function SplitViewDashboard() {
 
                             {/* Red Flags */}
                             {auditData.redFlags.length > 0 && (
-                                <Card className="p-5 bg-red-50/50 dark:bg-red-900/10 border border-red-200/50 dark:border-red-800/30 shadow-sm">
-                                    <h3 className="font-semibold text-sm text-red-700 dark:text-red-400 mb-3">⚠️ Areas of Concern</h3>
+                                <Card className="p-5 bg-[#FFF4F0] dark:bg-orange-900/10 border border-[#E8D4D0] dark:border-orange-800/30 shadow-sm">
+                                    <h3 className="font-semibold text-sm text-[#8A5A55] dark:text-orange-400 mb-3">⚠️ Areas of Concern</h3>
                                     <ul className="space-y-2">
                                         {auditData.redFlags.map((flag, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-red-600 dark:text-red-400">
-                                                <span className="text-red-500 mt-0.5">•</span>
+                                            <li key={i} className="flex items-start gap-2 text-sm text-[#8A5A55] dark:text-orange-400">
+                                                <span className="text-orange-500 mt-0.5">•</span>
                                                 {flag}
                                             </li>
                                         ))}
@@ -719,12 +839,12 @@ export function SplitViewDashboard() {
 
                             {/* Strengths */}
                             {auditData.strengths.length > 0 && (
-                                <Card className="p-5 bg-green-50/50 dark:bg-green-900/10 border border-green-200/50 dark:border-green-800/30 shadow-sm">
-                                    <h3 className="font-semibold text-sm text-green-700 dark:text-green-400 mb-3">✅ Strengths</h3>
+                                <Card className="p-5 bg-[#F4F7F4] dark:bg-green-900/10 border border-[#D8E2DC] dark:border-green-800/30 shadow-sm">
+                                    <h3 className="font-semibold text-sm text-[#4A6A56] dark:text-green-400 mb-3">✅ Strengths</h3>
                                     <ul className="space-y-2">
                                         {auditData.strengths.map((strength, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-sm text-green-600 dark:text-green-400">
-                                                <span className="text-green-500 mt-0.5">•</span>
+                                            <li key={i} className="flex items-start gap-2 text-sm text-[#4A6A56] dark:text-green-400">
+                                                <span className="text-green-600 mt-0.5">•</span>
                                                 {strength}
                                             </li>
                                         ))}
