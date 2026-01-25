@@ -423,7 +423,10 @@ export function SplitViewDashboard() {
             formData.append("text_input", text);
             formData.append("language", language);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}/chat/voice`, {
+            const backendUrl = process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL || "http://127.0.0.1:8000";
+            console.log("Connecting to Backend:", backendUrl);
+
+            const response = await fetch(`${backendUrl}/chat/voice`, {
                 method: "POST",
                 body: formData,
             });

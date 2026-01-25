@@ -258,7 +258,7 @@ def generate_pdf(session_id, score, decision, reason, plan, red_flags, strengths
         pdf.set_font("Arial", '', 11)
         pdf.set_text_color(200, 50, 50)
         for flag in red_flags:
-            pdf.multi_cell(0, 7, txt=f"• {flag}")
+            pdf.multi_cell(0, 7, txt=f"- {flag}")
         pdf.set_text_color(0, 0, 0)
         pdf.ln(5)
         
@@ -271,7 +271,7 @@ def generate_pdf(session_id, score, decision, reason, plan, red_flags, strengths
         pdf.set_font("Arial", '', 11)
         pdf.set_text_color(50, 150, 50)
         for s in strengths:
-            pdf.multi_cell(0, 7, txt=f"• {s}")
+            pdf.multi_cell(0, 7, txt=f"- {s}")
         pdf.set_text_color(0, 0, 0)
         pdf.ln(5)
 
@@ -282,7 +282,7 @@ def generate_pdf(session_id, score, decision, reason, plan, red_flags, strengths
     pdf.ln(2)
     pdf.set_font("Arial", '', 11)
     for p in plan:
-        pdf.multi_cell(0, 7, txt=f"• {p}")
+        pdf.multi_cell(0, 7, txt=f"- {p}")
     pdf.ln(5)
     
     # Footer disclaimer
@@ -421,12 +421,29 @@ async def voice_chat_google(
     
     NEXT FIELD TO COLLECT: {next_field}
     
+    ===== CRITICAL EXTRACTION RULES =====
+    YOU MUST EXTRACT the user's answer into `extracted_updates` using this EXACT mapping:
+    - "Annual Income" -> {{"annual_income": <number>}}
+    - "Monthly Debt Payments" -> {{"monthly_debt": <number>}}
+    - "Requested Loan Amount" -> {{"loan_amount": <number>}}
+    - "Payment Reliability (0-60)" -> {{"payment_history_rating": <0-60>}}
+    - "Credit Card Utilization %" -> {{"credit_utilization": <0.0-1.0>}} (convert % to decimal)
+    - "Credit History Length (Years)" -> {{"credit_history_years": <number>}}
+    - "Number of Active Credit Lines" -> {{"open_credit_lines": <number>}}
+    - "Recent Inquiries (Last 6 months)" -> {{"recent_inquiries": <number>}}
+    - "Bankruptcy History (Yes/No)" -> {{"bankruptcy_history": 1 if Yes, 0 if No}}
+    - "Loan Default History (Yes/No)" -> {{"defaults_history": 1 if Yes, 0 if No}}
+    
+    EXAMPLE: If NEXT FIELD is "Number of Active Credit Lines" and user says "2", you MUST return:
+    {{"response_text": "Got it, 2 active credit lines...", "extracted_updates": {{"open_credit_lines": 2}}, "is_ready": false, "chart": null}}
+    
     ===== ACTION REQUIRED =====
-    1. Read the user's latest message below.
-    2. If they provided a NUMBER or VALUE, extract it into `extracted_updates` using the appropriate field name.
-    3. If the user asks for ADVICE (e.g. "How to improve score", "Education loan"), answer them helpfully WITHOUT forcing the next field question immediately, unless they want an audit.
-    4. If collecting data: ask for the next missing field in {language} language.
-    5. If ALL fields are collected (or user explicitly asks to calculate result based on current data), set "is_ready": true.
+    1. Read the user's latest message.
+    2. If they provided ANY value for the NEXT FIELD, EXTRACT IT immediately.
+    3. Then ask for the NEXT missing field in {language} language.
+    4. If ALL fields are collected, set "is_ready": true.
+    
+    {lang_instruction}
     
     USER MESSAGE:
     """
@@ -470,8 +487,11 @@ async def voice_chat_google(
 
     # E. CHECK COMPLETION (Double-Validate with Python)
     remaining_missing = get_missing_fields(session)
-    # Only calculate if LLM thinks it's ready AND Python confirms 0 missing fields
-    is_really_ready = llm_data.get("is_ready", False) and len(remaining_missing) == 0
+    print(f"[DEBUG] Remaining missing fields: {remaining_missing}")
+    print(f"[DEBUG] LLM is_ready flag: {llm_data.get('is_ready', False)}")
+    
+    # FIX: Auto-trigger if Python detects 0 missing fields, OR if LLM explicitly says ready
+    is_really_ready = len(remaining_missing) == 0 or llm_data.get("is_ready", False)
     
     resp_text = llm_data["response_text"]
     report_link = None
@@ -479,6 +499,7 @@ async def voice_chat_google(
 
     # Feature: Automated Decision Engine + SMART ADVICE GENERATION
     if is_really_ready:
+        print(f"[DEBUG] ✅ AUDIT TRIGGERED! Calculating score...")
         score, decision, reason, plan, red_flags, strengths, radar_data = calculate_score_and_decision(session)
         
         # --- NEW: ASK GEMINI TO GENERATE THE FINAL "SMART SUGGESTION" ---
@@ -541,6 +562,7 @@ async def voice_chat_google(
     except:
         pass
 
+    print(f"[DEBUG] Returning: chart_data={chart is not None}, report_url={report_link}")
     return ChatResponse(
         response_text=resp_text,
         audio_base64=audio_b64,
