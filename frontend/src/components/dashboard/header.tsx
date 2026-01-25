@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { MobileSidebar } from "./sidebar";
 import { useLanguage, LANGUAGES, LanguageCode } from "@/contexts/language-context";
+import { useSession, signIn, signOut } from "next-auth/react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export function Header() {
     const pathname = usePathname();
     const { language, setLanguage, t } = useLanguage();
+    const { data: session } = useSession();
 
     // Simple breadcrumb generation logic
     const segments = pathname.split("/").filter(Boolean);
@@ -76,16 +78,23 @@ export function Header() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    {/* Language Selector */}
+                    {/* Language Selector - Compact Design */}
                     <Select value={language} onValueChange={(val) => setLanguage(val as LanguageCode)}>
-                        <SelectTrigger className="w-[110px] h-8 text-[13px] bg-white border-[#E5E5E5] dark:bg-[#30302E] dark:border-[#404040]">
-                            <SelectValue placeholder={t('language')} />
+                        <SelectTrigger className="w-auto min-w-[70px] h-9 gap-1.5 px-3 text-sm font-medium bg-white dark:bg-[#2B2A29] border-[#E5E5E5] dark:border-[#404040] rounded-lg hover:bg-slate-50 dark:hover:bg-[#363635] transition-colors">
+                            <span className="text-base leading-none">{LANGUAGES.find(l => l.code === language)?.flag}</span>
+                            <span className="text-[13px] text-slate-700 dark:text-slate-300 uppercase tracking-wide">{language}</span>
                         </SelectTrigger>
-                        <SelectContent align="end" className="w-[150px]">
+                        <SelectContent align="end" className="min-w-[160px] rounded-lg">
                             {LANGUAGES.map((lang) => (
-                                <SelectItem key={lang.code} value={lang.code} className="text-[13px]">
-                                    <span className="mr-2">{lang.flag}</span>
-                                    {lang.label}
+                                <SelectItem
+                                    key={lang.code}
+                                    value={lang.code}
+                                    className="text-sm cursor-pointer rounded-md"
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <span className="text-base">{lang.flag}</span>
+                                        <span>{lang.label}</span>
+                                    </div>
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -101,18 +110,36 @@ export function Header() {
 
                     {/* User Badge */}
                     <div className="flex items-center gap-3">
-                        <div className="hidden md:block text-right">
-                            <p className="text-sm font-medium text-[#1F1E1D] dark:text-[#ECECEC]">Rahul S.</p>
-                            <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF]">{t('msme_owner')}</p>
-                        </div>
-                        <Avatar className="h-8 w-8 border border-[#E5E5E5] dark:border-[#404040]">
-                            <AvatarImage src="/avatars/01.png" alt="Rahul S." />
-                            <AvatarFallback className="bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white text-xs">RS</AvatarFallback>
-                        </Avatar>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6B7280] hover:text-red-500 dark:hover:text-red-400">
-                            <LogOut className="h-4 w-4" />
-                            <span className="sr-only">{t('log_out')}</span>
-                        </Button>
+                        {session?.user ? (
+                            <>
+                                <div className="hidden md:block text-right">
+                                    <p className="text-sm font-medium text-[#1F1E1D] dark:text-[#ECECEC]">{session.user.name}</p>
+                                    <p className="text-[11px] text-[#6B7280] dark:text-[#9CA3AF]">{session.user.email}</p>
+                                </div>
+                                <Avatar className="h-8 w-8 border border-[#E5E5E5] dark:border-[#404040]">
+                                    <AvatarImage src={session.user.image || "/avatars/01.png"} alt={session.user.name || "User"} />
+                                    <AvatarFallback className="bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white text-xs">
+                                        {session.user.name?.charAt(0) || "U"}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-[#6B7280] hover:text-red-500 dark:hover:text-red-400"
+                                    onClick={() => signOut()}
+                                >
+                                    <LogOut className="h-4 w-4" />
+                                    <span className="sr-only">{t('log_out')}</span>
+                                </Button>
+                            </>
+                        ) : (
+                            <Button
+                                onClick={() => signIn("google")}
+                                className="h-9 rounded-full bg-[#2A3B52] text-white hover:bg-[#2A3B52]/90 px-4 text-sm font-medium shadow-sm"
+                            >
+                                Log in
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>

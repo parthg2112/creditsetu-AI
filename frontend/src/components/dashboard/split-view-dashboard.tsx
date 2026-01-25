@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, FormEvent, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -95,6 +95,11 @@ export function SplitViewDashboard() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
+    // Resizable panel state
+    const [leftPanelWidth, setLeftPanelWidth] = useState(35); // percentage
+    const [isResizing, setIsResizing] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
     // Global Language State
     const { language, t } = useLanguage();
 
@@ -132,22 +137,31 @@ export function SplitViewDashboard() {
         }
     }, []);
 
+    // Ref for the scroll anchor at the bottom of messages
+    const scrollAnchorRef = useRef<HTMLDivElement>(null);
+
     // Auto-scroll to bottom when messages change or loading state changes
     useEffect(() => {
         const scrollToBottom = () => {
-            if (scrollRef.current) {
-                scrollRef.current.scrollTo({
-                    top: scrollRef.current.scrollHeight,
-                    behavior: 'smooth'
-                });
+            // Method 1: Use scrollIntoView on anchor (most reliable)
+            if (scrollAnchorRef.current) {
+                scrollAnchorRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+            // Method 2: Fallback to scrollTop manipulation
+            else if (scrollRef.current) {
+                scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
             }
         };
-        // Use requestAnimationFrame + small timeout to ensure DOM has updated
-        const timeoutId = setTimeout(() => {
-            requestAnimationFrame(scrollToBottom);
-        }, 50);
-        return () => clearTimeout(timeoutId);
-    }, [messages, isLoading]);
+
+        // Multiple scroll attempts to handle animation delays
+        const timeouts = [
+            setTimeout(scrollToBottom, 0),
+            setTimeout(scrollToBottom, 100),
+            setTimeout(scrollToBottom, 300),
+        ];
+
+        return () => timeouts.forEach(clearTimeout);
+    }, [messages, isLoading, messages.length]);
 
     const addMessage = (msg: Omit<Message, "id">) => {
         const uniqueId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -328,36 +342,7 @@ export function SplitViewDashboard() {
     };
 
     // Voice Recording Functions
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mediaRecorder = new MediaRecorder(stream);
-            mediaRecorderRef.current = mediaRecorder;
-            const chunks: BlobPart[] = [];
-
-            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
-            mediaRecorder.onstop = async () => {
-                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-                await sendAudioToBackend(audioBlob);
-            };
-
-            mediaRecorder.start();
-            setIsRecording(true);
-        } catch (err) {
-            console.error("Error accessing microphone:", err);
-            alert("Could not access microphone.");
-        }
-    };
-
-    const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
-            mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
-        }
-    };
-
-    const sendAudioToBackend = async (audioBlob: Blob) => {
+    const sendAudioToBackend = useCallback(async (audioBlob: Blob) => {
         if (!sessionId) return;
         setIsLoading(true);
 
@@ -399,19 +384,43 @@ export function SplitViewDashboard() {
             if (data.report_url) {
                 const fullUrl = `${process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL}${data.report_url}`;
                 setReportUrl(fullUrl);
-                addMessage({
-                    role: "system",
-                    content: `Your detailed Loan Readiness Report has been generated. You can download it below. [Download PDF](${fullUrl})`
-                });
             }
-
         } catch (error) {
-            console.error("Error sending audio:", error);
-            addMessage({ role: "system", content: "Something went wrong with voice processing. Please try again." });
+            console.error("Error sending audio to backend:", error);
+            addMessage({ role: "system", content: "Voice processing failed. Please try again." });
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [sessionId, language, t]);
+
+    const startRecording = useCallback(async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            const chunks: BlobPart[] = [];
+
+            mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                await sendAudioToBackend(audioBlob);
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (err) {
+            console.error("Error accessing microphone:", err);
+            alert("Could not access microphone. Please check permissions.");
+        }
+    }, [sendAudioToBackend]);
+
+    const stopRecording = useCallback(() => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            mediaRecorderRef.current.stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
+        }
+    }, [isRecording]);
 
     const sendMessageToBackend = async (text: string) => {
         if (!sessionId) return;
@@ -571,7 +580,7 @@ export function SplitViewDashboard() {
             </div>
 
             {/* Messages - Claude Style */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4" ref={scrollRef}>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth" ref={scrollRef}>
                 {messages.map((msg) => (
                     <motion.div
                         key={msg.id}
@@ -663,6 +672,9 @@ export function SplitViewDashboard() {
                         </div>
                     </div>
                 )}
+
+                {/* Scroll anchor - always at bottom for reliable auto-scroll */}
+                <div ref={scrollAnchorRef} className="h-0 w-0" aria-hidden="true" />
             </div>
 
             {/* Claude-style Input */}
@@ -683,17 +695,30 @@ export function SplitViewDashboard() {
                         disabled={isLoading || (stage !== "complete" && stage !== "loan-amount")}
                     />
 
-                    {/* Mic Button */}
+                    {/* Mic Button - English Only */}
                     <button
                         type="button"
-                        onClick={isRecording ? stopRecording : startRecording}
+                        onClick={() => {
+                            if (language !== 'en') {
+                                alert(t('voice_only_english'));
+                                return;
+                            }
+                            if (isRecording) {
+                                stopRecording();
+                            } else {
+                                startRecording();
+                            }
+                        }}
+                        title={language !== 'en' ? t('voice_only_english') : undefined}
                         className={`
                             h-8 w-8 rounded-xl shrink-0 flex items-center justify-center transition-all duration-200
-                            ${isRecording
-                                ? 'bg-red-500 text-white animate-pulse shadow-md'
-                                : 'text-[#9CA3AF] hover:text-[#D46B4F] hover:bg-[#F3F4F6] dark:hover:bg-[#30302E]'}
+                            ${language !== 'en'
+                                ? 'text-[#9CA3AF] opacity-50 cursor-not-allowed'
+                                : isRecording
+                                    ? 'bg-red-500 text-white animate-pulse shadow-md'
+                                    : 'text-[#9CA3AF] hover:text-[#D46B4F] hover:bg-[#F3F4F6] dark:hover:bg-[#30302E]'}
                         `}
-                        disabled={isLoading}
+                        disabled={isLoading || language !== 'en'}
                     >
                         <Mic className="h-4 w-4" />
                     </button>
@@ -716,7 +741,7 @@ export function SplitViewDashboard() {
                 </p>
             </form>
         </div>
-    ), [messages, isLoading, inputValue, stage, language]);
+    ), [messages, isLoading, inputValue, stage, language, isRecording, startRecording, stopRecording, handleSubmit, handleQuickReply, reportUrl, t]);
 
     // Render the dashboard panel - memoized to prevent re-renders
     const dashboardPanel = useMemo(() => (
@@ -876,24 +901,84 @@ export function SplitViewDashboard() {
         </div>
     ), [auditData]);
 
+    // Resize handlers
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsResizing(true);
+    }, []);
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!isResizing || !containerRef.current) return;
+
+        const containerRect = containerRef.current.getBoundingClientRect();
+        const newWidth = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+
+        // Limit between 25% and 60%
+        setLeftPanelWidth(Math.min(60, Math.max(25, newWidth)));
+    }, [isResizing]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
+    // Attach global mouse events for resizing
+    useEffect(() => {
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = 'col-resize';
+            document.body.style.userSelect = 'none';
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        };
+    }, [isResizing, handleMouseMove, handleMouseUp]);
+
     return (
-        <>
+        <div className="h-[calc(100vh-4rem)] w-full overflow-hidden">
             {/* Desktop Split View */}
-            <div className="hidden lg:flex h-[calc(100vh-4rem)] gap-0">
-                {/* Left Panel - Chat (40%) */}
-                <div className="w-[40%] border-r border-border/50">
+            <div
+                ref={containerRef}
+                className="hidden lg:flex h-full w-full"
+            >
+                {/* Left Panel - Chat */}
+                <div
+                    className="h-full overflow-hidden flex-shrink-0"
+                    style={{ width: `${leftPanelWidth}%` }}
+                >
                     {chatPanel}
                 </div>
-                {/* Right Panel - Dashboard (60%) */}
-                <div className="w-[60%]">
+
+                {/* Resizable Divider */}
+                <div
+                    className={`
+                        w-1 h-full cursor-col-resize flex-shrink-0
+                        bg-border hover:bg-primary/30 active:bg-primary/50
+                        transition-colors duration-150
+                        flex items-center justify-center
+                        group
+                    `}
+                    onMouseDown={handleMouseDown}
+                >
+                    <div className="w-0.5 h-8 bg-muted-foreground/30 rounded-full group-hover:bg-primary/50 transition-colors" />
+                </div>
+
+                {/* Right Panel - Dashboard */}
+                <div
+                    className="h-full overflow-hidden flex-1"
+                >
                     {dashboardPanel}
                 </div>
             </div>
 
             {/* Mobile Tabbed View */}
-            <div className="lg:hidden">
-                <Tabs value={mobileTab} onValueChange={(v: string) => setMobileTab(v as "chat" | "dashboard")}>
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
+            <div className="lg:hidden h-full">
+                <Tabs value={mobileTab} onValueChange={(v: string) => setMobileTab(v as "chat" | "dashboard")} className="h-full flex flex-col">
+                    <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                         <TabsTrigger value="chat" className="gap-2">
                             <MessageSquare className="h-4 w-4" />
                             Chat
@@ -906,14 +991,14 @@ export function SplitViewDashboard() {
                             )}
                         </TabsTrigger>
                     </TabsList>
-                    <TabsContent value="chat" className="h-[calc(100vh-10rem)]">
+                    <TabsContent value="chat" className="flex-1 overflow-hidden mt-0">
                         {chatPanel}
                     </TabsContent>
-                    <TabsContent value="dashboard" className="h-[calc(100vh-10rem)]">
+                    <TabsContent value="dashboard" className="flex-1 overflow-hidden mt-0">
                         {dashboardPanel}
                     </TabsContent>
                 </Tabs>
             </div>
-        </>
+        </div>
     );
 }

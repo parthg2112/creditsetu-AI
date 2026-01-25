@@ -8,4 +8,9 @@ supabase
 google-generativeai
 python-dotenv
 python-multipart
+fpdf2
+gtts
+slowapi
+redis
+pydantic-settings
 

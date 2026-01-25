@@ -6,6 +6,7 @@ const nextConfig = {
             destination: 'http://127.0.0.1:8000/:path*',
         },
     ],
+    output: "standalone",
 };
 
 export default nextConfig;

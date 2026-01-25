@@ -4,7 +4,11 @@ import { ArrowRight, ShieldCheck, Upload, Sparkles, MessageCircle, BarChart3, Ch
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function Home() {
+import { auth } from "@/auth";
+
+export default async function Home() {
+  const session = await auth();
+
   return (
     <div className="flex min-h-screen flex-col bg-background font-sans text-foreground selection:bg-primary/10">
       {/* Navbar */}
@@ -22,11 +26,26 @@ export default function Home() {
             <Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button className="hidden md:inline-flex rounded-full bg-[#2A3B52] px-6 font-semibold text-white shadow-lg shadow-[#2A3B52]/20 hover:bg-[#2A3B52]/90">
-                Check My Readiness Free
-              </Button>
-            </Link>
+            {session ? (
+              <Link href="/dashboard">
+                <Button className="hidden md:inline-flex rounded-full bg-[#2A3B52] px-6 font-semibold text-white shadow-lg shadow-[#2A3B52]/20 hover:bg-[#2A3B52]/90">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link href="/api/auth/signin">
+                  <Button variant="ghost" className="font-medium">
+                    Log in
+                  </Button>
+                </Link>
+                <Link href="/dashboard">
+                  <Button className="hidden md:inline-flex rounded-full bg-[#2A3B52] px-6 font-semibold text-white shadow-lg shadow-[#2A3B52]/20 hover:bg-[#2A3B52]/90">
+                    Get Started
+                  </Button>
+                </Link>
+              </div>
+            )}
             <Button variant="ghost" size="icon" className="md:hidden">
               <span className="sr-only">Toggle menu</span>
               <svg
@@ -241,8 +260,14 @@ export default function Home() {
         </section >
 
         {/* CTA Section */}
-        < section className="py-24 bg-[#2A3B52] text-white relative overflow-hidden" >
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10"></div>
+        <section className="py-24 bg-[#2A3B52] text-white relative overflow-hidden">
+          {/* Noise texture using inline CSS instead of external URL */}
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            }}
+          />
           <div className="container relative mx-auto px-4 max-w-4xl text-center space-y-8">
             <h2 className="font-serif text-3xl font-bold sm:text-4xl md:text-5xl">
               Ready to get funded?
@@ -261,8 +286,8 @@ export default function Home() {
               </p>
             </div>
           </div>
-        </section >
-      </main >
+        </section>
+      </main>
 
       {/* Footer */}
       < footer className="bg-slate-950 text-slate-300 py-12 border-t border-slate-900" >
