@@ -34,6 +34,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from app.utils.supabase_client import save_message, get_chat_history, get_latest_session
+from app.rag import query_rbi_docs, retrieve_context
 
 # --- 1. CONFIGURATION & VALIDATION ---
 load_dotenv()
@@ -148,6 +149,7 @@ class ChatResponse(BaseModel):
     audio_url: Optional[str] = None  # Changed from base64 to URL
     chart_data: Optional[Dict[str, Any]] = None
     report_url: Optional[str] = None
+    is_rbi_verified: bool = False
 
 
 class StreamChunk(BaseModel):
@@ -467,6 +469,11 @@ You are Creditsetu, an expert Indian AI Loan Consultant.
    - Collect the 10 mandatory variables one by one.
    - Extract numbers from user responses into `extracted_updates`.
 
+3. **REGULATORY & LITERACY EXPERT (Triggered when RBI/Regulations or Literacy context is provided):**
+   - Answer strictly based on the provided context.
+   - Do NOT ask for loan application details (income, debt, etc.) unless the user explicitly connects the regulation to their personal application.
+   - Prioritize the user's question over the data collection flow.
+
 **CRITICAL RULES:**
 1. **STRICT EXTRACTION:** ONLY extract the variable corresponding to the `JSON KEY TO USE`. Do NOT extract values for other fields unless explicitly stated by the user.
 2. **VALIDATION & CONVERSION:**
@@ -564,7 +571,7 @@ I'm your AI loan consultant. Choose an option:
 **1.** Check Loan Eligibility 🏦
 **2.** Improve Credit Score 📈
 **3.** Document Checklist 📄
-**4.** Full ₹5 Lakhs Audit ✅
+**4.** Rules and Regulations 📜
 """,
         "hi": """**क्रेडिटसेतु AI में आपका स्वागत है** 👋
 
@@ -573,7 +580,7 @@ I'm your AI loan consultant. Choose an option:
 **1.** लोन पात्रता की जाँच करें 🏦
 **2.** क्रेडिट स्कोर सुधारें 📈
 **3.** दस्तावेज़ चेकलिस्ट 📄
-**4.** ₹5 लाख लोन ऑडिट ✅
+**4.** नियम और विनियम 📜
 """,
         "hinglish": """**CreditSetu AI mein aapka swagat hai** 👋
 
@@ -582,7 +589,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **1.** Loan Eligibility check karein 🏦
 **2.** Credit Score improve karein 📈
 **3.** Document Checklist 📄
-**4.** Full ₹5 Lakhs Audit ✅
+**4.** Rules aur Regulations 📜
 """,
         "te": """**క్రెడిట్‌సేతు AI కి స్వాగతం** 👋
 
@@ -591,7 +598,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **1.** లోన్ అర్హతను తನಿఖీ చేయండి 🏦
 **2.** క్రెడిట్ స్కోర్ మెరుగుపరచండి 📈
 **3.** డాక్యుమెంట్ చెక్‌లిస్ట్ 📄
-**4.** పూర్తి ₹5 లక్షల ఆడిట్ ✅
+**4.** నియమాలు మరియు నిబంధనలు 📜
 """,
         "mr": """**क्रेडिटसेतु AI मध्ये आपले स्वागत आहे** 👋
 
@@ -600,7 +607,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **1.** कर्ज पात्रता तपासा 🏦
 **2.** क्रेडिट स्कोर सुधारा 📈
 **3.** कागदपत्र चेकलिस्ट 📄
-**4.** पूर्ण ₹5 लाख ऑडिट ✅
+**4.** नियम आणि कायदे 📜
 """,
         "ta": """**கிரெடிட்சேது AI க்கு வரவேற்கிறோம்** 👋
 
@@ -609,7 +616,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **1.** கடன் தகுதியைச் சரிபார்க்கவும் 🏦
 **2.** கிரெடிட் ஸ்கோரை மேம்படுத்தவும் 📈
 **3.** ஆவண சரிபார்ப்புப் பட்டியல் 📄
-**4.** முழுமையான ₹5 லட்சம் தಣிக்கை ✅
+**4.** விதிகள் மற்றும் ஒழுங்குமுறைகள் 📜
 """,
         "kn": """**ಕ್ರೆಡಿಟ್‍ಸೇತು AI ಗೆ ಸ್ವಾಗತ** 👋
 
@@ -618,7 +625,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **1.** ಸಾಲ ಅರ್ಹತೆಯನ್ನು ಪರಿಶೀಲಿಸಿ 🏦
 **2.** ಕ್ರೆಡಿಟ್ ಸ್ಕೋರ್ ಸುಧಾರಿಸಿ 📈
 **3.** ದಾಖಲೆ ಪರಿಶೀಲನಾ ಪಟ್ಟಿ 📄
-**4.** ಸಂಪೂರ್ಣ ₹5 ಲಕ್ಷ ಆಡಿಟ್ ✅
+**4.** ನಿಯಮಗಳು ಮತ್ತು ನಿಬಂಧನೆಗಳು 📜
 """,
         "bn": """**ক্রেডিটসেতু AI তে স্বাগতম** 👋
 
@@ -627,7 +634,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **1.** লোন যোগ্যতা পরীক্ষা করুন 🏦
 **2.** ক্রেডিট স্কোর উন্নত করুন 📈
 **3.** নথি চেকলিস্ট 📄
-**4.** সম্পূর্ণ ₹5 লক্ষ অডিট ✅
+**4.** নিয়ম ও প্রবিধান 📜
 """
     }
     
@@ -670,7 +677,7 @@ async def voice_chat(
             "1": "Check my loan eligibility",
             "2": "How can I improve my credit score?",
             "3": "What documents are needed for a loan?",
-            "4": "Check my readiness for ₹5 Lakhs loan"
+            "4": "Tell me about banking rules and regulations"
         }
         text_input = shortcuts[text_input.strip()]
     
@@ -696,14 +703,60 @@ async def voice_chat(
     if language == "hinglish":
         lang_instruction += " Keep it conversational and natural."
     
+    # RAG Context Injection
+    rbi_context = ""
+    # Check if user is asking about rules/regulations or used option 4
+    is_rag_query = False
+    is_rbi_verified = False
+    if text_input:
+        keywords = [
+            "rule", "regulation", "rbi", "bank", "law", "act", "guideline", "norm", "kyc", "repo", "interest", 
+            "scam", "fraud", "fake", "fee", "charge", "upfront", "pay", "money",
+            "literacy", "safety", "borrower", "right", "duty", "ombudsman", "complaint", "grievance"
+        ]
+        if "banking rules and regulations" in text_input.lower() or any(k in text_input.lower() for k in keywords):
+            is_rag_query = True
+    
+    if is_rag_query and text_input:
+        print(f"Fetching RAG context for: {text_input}")
+        rbi_context, sources = await retrieve_context(text_input)
+        
+        # Determine if verified badge should be shown (Only for RBI docs and Fraud lists)
+        verified_docs = [
+            "Reserve Bank of India.pdf",
+            "ALERTLIST-FRAUDCOMPANIES.PDF",
+            "RBI-FRAUD-RISK-MANAGEMENT-15-07-24.pdf",
+            "BANKI15122014.PDF",
+            "rbi_fraud_user_notice.PDF"
+        ]
+        is_rbi_verified = any(doc in s for s in sources for doc in verified_docs)
+        
+        if rbi_context:
+            citation_instruction = "2. Do NOT cite the specific filename (e.g., 'ALERTLIST-FRAUDCOMPANIES.PDF'). Instead, refer to it as 'RBI Alert List' or 'official guidelines'."
+            if not is_rbi_verified:
+                citation_instruction = "2. Do NOT mention the source name, filename, or 'According to...' in the response. Just give the answer directly."
+
+            rbi_context = f"\n\nRELEVANT DOCUMENTS (SOURCE: {', '.join(sources)}):\n{rbi_context}\n\nINSTRUCTIONS:\n1. Answer based ONLY on the above documents.\n{citation_instruction}\n3. DO NOT give generic advice like 'check online' or 'consult a professional' if the answer is in the document.\n4. If the answer is NOT in the document, state that clearly."
+
+    # Only inject missing fields if NOT a RAG query, or if RAG query is empty
+    fields_prompt = ""
+    if not is_rag_query:
+        fields_prompt = f"""
+FIELDS NEEDED: {missing_fields}
+CURRENT QUESTION: "{next_field}"
+JSON KEY TO USE: "{next_key}"
+"""
+    else:
+        fields_prompt = "FIELDS NEEDED: [] (SUPPRESSED FOR REGULATORY QUERY)"
+
     dynamic_prompt = BASE_SYSTEM_INSTRUCTION + f"""
+
+{rbi_context}
 
 SESSION STATE:
 {session.model_dump_json(exclude={'chat_history', 'session_id'})}
 
-FIELDS NEEDED: {missing_fields}
-CURRENT QUESTION: "{next_field}"
-JSON KEY TO USE: "{next_key}"
+{fields_prompt}
 
 {lang_instruction}
 
@@ -813,8 +866,23 @@ USER MESSAGE:
         user_transcription=user_transcription,
         audio_url=audio_url,
         chart_data=chart_data,
-        report_url=report_url
+        report_url=report_url,
+        is_rbi_verified=is_rbi_verified
     )
+
+
+
+class RAGQuery(BaseModel):
+    query: str
+
+@app.post("/rag/query")
+@limiter.limit("100/day", key_func=standard_key)
+async def rag_query(request: Request, query_data: RAGQuery):
+    """
+    Query RBI regulations using RAG.
+    """
+    answer = await query_rbi_docs(query_data.query)
+    return {"answer": answer}
 
 
 @app.get("/chat/stream/{session_id}")

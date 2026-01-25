@@ -23,6 +23,7 @@ interface Message {
     content: string;
     type?: "text" | "quick-reply";
     quickReplies?: string[];
+    is_rbi_verified?: boolean;
 }
 
 // Audit data type
@@ -399,7 +400,11 @@ export function SplitViewDashboard() {
             }
 
             // Handle Response
-            addMessage({ role: "assistant", content: data.response_text });
+            addMessage({
+                role: "assistant",
+                content: data.response_text,
+                is_rbi_verified: data.is_rbi_verified
+            });
 
             if (data.chart_data?.type === "audit_complete") {
                 const audit = data.chart_data.data;
@@ -482,7 +487,8 @@ export function SplitViewDashboard() {
             // Add Assistant Message
             addMessage({
                 role: "assistant",
-                content: data.response_text
+                content: data.response_text,
+                is_rbi_verified: data.is_rbi_verified
             });
 
             // Handle Chart Data
@@ -713,6 +719,20 @@ export function SplitViewDashboard() {
                                     </div>
                                 ) : (
                                     <span className="text-[15px]">{msg.content}</span>
+                                )}
+
+                                {/* RBI Verification Badge */}
+                                {msg.is_rbi_verified && (
+                                    <div className="mt-3 pt-2 border-t border-[#E5E5E5] dark:border-[#404040] flex items-center gap-1.5">
+                                        <div className="h-4 w-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-2.5 h-2.5 text-green-600 dark:text-green-400">
+                                                <path d="M20 6L9 17l-5-5" />
+                                            </svg>
+                                        </div>
+                                        <span className="text-[11px] font-medium text-green-700 dark:text-green-400">
+                                            Verified Source: Official Guidelines
+                                        </span>
+                                    </div>
                                 )}
                             </div>
 
