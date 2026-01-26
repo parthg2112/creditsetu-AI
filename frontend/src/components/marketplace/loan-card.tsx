@@ -21,7 +21,7 @@ export function LoanCard({ loan, isSelected, onToggleSelect }: LoanCardProps) {
             style={{
                 width: "320px",
                 minWidth: "320px",
-                height: "280px",
+                height: "340px",
                 boxShadow: isSelected ? undefined : "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
             }}
         >

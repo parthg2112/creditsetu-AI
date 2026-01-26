@@ -1,4 +1,4 @@
-# LendReady AI
+# CreditSetu AI
 
 Automated SME Loan Auditing & Gap Analysis powered by Next.js, FastAPI, and LlamaIndex.
 
@@ -42,7 +42,7 @@ docker-compose up --build
 A decoupled yet unified architecture: separation of concerns with a verified proxy connection.
 
 ```text
-lendready-ai/
+CreditSetu-ai/
 ├── .env                  # Shared environment variables (API keys, DB URLs)
 ├── docker-compose.yml    # Orchestration for running both services
 ├── README.md             # This guide

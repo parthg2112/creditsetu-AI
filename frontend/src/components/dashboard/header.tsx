@@ -113,12 +113,6 @@ export function Header() {
                         </SelectContent>
                     </Select>
 
-                    <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-primary mr-2">
-                        <Bell className="h-5 w-5" />
-                        <span className="absolute top-2.5 right-2.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
-                        <span className="sr-only">Notifications</span>
-                    </Button>
-
                     <div className="h-8 w-px bg-[#E5E5E5] dark:bg-[#404040] mx-2" />
 
                     {/* User Badge */}

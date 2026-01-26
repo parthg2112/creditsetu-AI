@@ -18,6 +18,11 @@ import base64
 import re
 import asyncio
 from typing import Dict, List, Optional, Any
+from datetime import datetime
+import matplotlib
+matplotlib.use('Agg')  # Non-interactive backend
+import matplotlib.pyplot as plt
+import numpy as np
 from io import BytesIO
 from contextlib import asynccontextmanager
 
@@ -188,6 +193,12 @@ class SessionStore:
         return updated
 
 
+    def clear(self, session_id: str) -> None:
+        """Clear session history and data"""
+        if session_id in self._store:
+            # Re-initialize clean session
+            self._store[session_id] = LoanSession(session_id=session_id)
+
 sessions = SessionStore()
 
 # --- 3. HELPER FUNCTIONS ---
@@ -332,110 +343,207 @@ def calculate_score_and_decision(data: LoanSession) -> Dict[str, Any]:
     }
 
 
+def generate_score_gauge(score: int, filename: str):
+    """Generate vibrant modern donut gauge chart"""
+    # Normalize score 300-900 -> 0-1
+    min_score = 300
+    max_score = 900
+    norm_score = (score - min_score) / (max_score - min_score)
+    
+    # Colors: Red -> Yellow -> Green
+    colors = ['#EF4444', '#F59E0B', '#10B981']
+    color = colors[0] if score < 650 else colors[1] if score < 750 else colors[2]
+    
+    fig, ax = plt.subplots(figsize=(6, 3), subplot_kw={'projection': 'polar'})
+    ax.set_theta_zero_location('N')
+    ax.set_theta_direction(-1)
+    
+    # Background Track (Thin Arc)
+    ax.barh(0, np.pi, left=-np.pi/2, height=0.3, color='#E5E7EB', edgecolor='none')
+    
+    # Value Arc
+    ax.barh(0, norm_score * np.pi, left=-np.pi/2, height=0.3, color=color, alpha=1.0)
+    
+    # Hide axis
+    ax.set_axis_off()
+    
+    # Removed text to prevent overlap as per user request
+    
+    plt.savefig(filename, bbox_inches='tight', transparent=True, dpi=120)
+    plt.close()
+
+
+def generate_radar_chart(audit_data: Dict[str, Any], filename: str):
+    """Generate clean radar chart"""
+    categories = [d['letter'] for d in audit_data['radar_data']]
+    values = [d['frequency'] for d in audit_data['radar_data']]
+    
+    # Close the loop
+    values += values[:1]
+    angles = np.linspace(0, 2 * np.pi, len(categories), endpoint=False).tolist()
+    angles += angles[:1]
+    
+    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
+    
+    # Background grid style
+    ax.set_facecolor('#F9FAFB')
+    ax.grid(color='#E5E7EB', linestyle='--', linewidth=1)
+    
+    # Draw polygon
+    ax.plot(angles, values, color='#6366F1', linewidth=2, linestyle='solid')
+    ax.fill(angles, values, color='#6366F1', alpha=0.2)
+    
+    # Labels
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(categories, fontsize=11, fontweight='bold', color='#374151')
+    
+    # Y-labels (Hide/Minimal)
+    ax.set_yticklabels([])
+    ax.spines['polar'].set_visible(False)
+    plt.ylim(0, 100)
+    
+    plt.savefig(filename, bbox_inches='tight', transparent=True, dpi=120)
+    plt.close()
+
+
 # --- 5. BACKGROUND TASKS ---
 
 def generate_pdf_sync(session_id: str, audit_data: Dict[str, Any]) -> str:
-    """Synchronous PDF generation (runs in background)"""
+    """Synchronous PDF generation with pro dense layout"""
     pdf = FPDF()
+    pdf.set_auto_page_break(False) # Manual control for density
     pdf.add_page()
     
-    # Header
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(0, 10, txt="CREDITSETU AI - CREDIT READINESS AUDIT", ln=1, align='C')
-    pdf.set_font("Arial", 'I', 10)
-    pdf.cell(0, 10, txt=f"Session: {session_id[:8]}...", ln=1, align='C')
-    pdf.ln(10)
+    # --- HEADER ---
+    pdf.set_font("Helvetica", 'B', 18)
+    pdf.set_text_color(40, 50, 70)
+    pdf.cell(0, 8, txt="CREDITSETU AI AUDIT", ln=1, align='L')
     
-    # Executive Summary
-    pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, txt="1. EXECUTIVE SUMMARY", ln=1, fill=True)
-    pdf.ln(2)
+    pdf.set_font("Helvetica", '', 9)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, txt=f"Session: {session_id[:8]} | Date: {datetime.now().strftime('%Y-%m-%d')}", ln=1, align='L')
     
-    score = audit_data["score"]
-    pdf.set_font("Arial", 'B', 14)
-    pdf.cell(50, 10, txt=f"Credit Score: {score}/900", ln=1)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.line(10, 25, 200, 25)
     
-    # Score bar
-    pdf.set_fill_color(200, 200, 200)
-    pdf.rect(10, pdf.get_y(), 180, 5, 'F')
-    score_pct = (score - 300) / 600
-    if score >= 750:
-        pdf.set_fill_color(100, 180, 100)
-    elif score >= 650:
-        pdf.set_fill_color(200, 200, 100)
-    else:
-        pdf.set_fill_color(200, 100, 100)
-    pdf.rect(10, pdf.get_y(), 180 * score_pct, 5, 'F')
-    pdf.ln(8)
+    # --- ROW 1: VISUALS (Gauge Left, Radar Right) ---
+    y_visuals = 30
     
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, txt=f"Decision: {audit_data['decision']}", ln=1)
-    pdf.set_font("Arial", '', 11)
-    safe_reason = f"Reasoning: {audit_data['reason']}".encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(190, 7, txt=safe_reason)
-    pdf.ln(5)
+    # Generate Charts
+    gauge_path = f"backend/data/gauge_{session_id}.png"
+    generate_score_gauge(audit_data["score"], gauge_path)
     
-    # Factor Analysis
-    pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, txt="2. FACTOR ANALYSIS", ln=1, fill=True)
-    pdf.ln(2)
-    pdf.set_font("Arial", '', 10)
+    radar_path = f"backend/data/radar_{session_id}.png"
+    generate_radar_chart(audit_data, radar_path)
     
-    for item in audit_data["radar_data"]:
-        name = item['letter']
-        val = item['frequency']
-        status = "Good" if val > 70 else "Average" if val > 40 else "Needs Work"
-        pdf.cell(80, 8, f" {name}", 1)
-        pdf.cell(40, 8, f" {val}/100", 1)
-        pdf.cell(70, 8, f" {status}", 1)
-        pdf.ln()
-    pdf.ln(5)
+    # Place Images
+    # Gauge on Left
+    pdf.image(gauge_path, x=10, y=y_visuals, w=80) 
     
-    # Red Flags
-    if audit_data["red_flags"]:
-        pdf.set_fill_color(255, 235, 235)
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, txt="3. RISK FACTORS", ln=1, fill=True)
-        pdf.ln(2)
-        pdf.set_font("Arial", '', 11)
-        pdf.set_text_color(200, 50, 50)
-        for flag in audit_data["red_flags"]:
-            # Ensure text is safe and use explicit width
-            safe_text = f"- {flag}".encode('latin-1', 'replace').decode('latin-1')
-            pdf.multi_cell(190, 7, txt=safe_text)
+    # Radar on Right
+    pdf.image(radar_path, x=110, y=y_visuals, w=80)
+    
+    # Cleanup images
+    os.remove(gauge_path)
+    os.remove(radar_path)
+    
+    # Place Labels/Titles for charts
+    pdf.set_y(y_visuals)
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(90, 5, "CREDIT SCORE", align='C')
+    pdf.set_x(110)
+    pdf.cell(80, 5, "FACTOR ANALYSIS", align='C')
+    
+    # --- ROW 2: DECISION Context (Centered below Gauge) ---
+    # We put decision text below the Gauge, but keep Radar visible on right
+    y_decision = y_visuals + 45 # Gauge is approx 40-50 high
+    
+    pdf.set_xy(10, y_decision)
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.cell(90, 5, "DECISION STATUS:", ln=1, align='C')
+    
+    status_color = (20, 150, 80) if audit_data['decision'] == 'APPROVED' else (200, 50, 50)
+    pdf.set_text_color(*status_color)
+    pdf.set_font("Helvetica", 'B', 16)
+    pdf.cell(90, 7, audit_data['decision'], ln=1, align='C')
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_font("Helvetica", '', 9)
+    pdf.set_x(15)
+    # Wrap text for reason
+    reason_clean = audit_data['reason'].encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(80, 4, txt=reason_clean, align='C')
+    
+    # Move past the visuals row
+    pdf.set_y(y_decision + 35) # Ensure we clear the charts
+    
+    # --- ROW 3: INSIGHTS (Strengths Left, Risks Right) ---
+    y_insights = pdf.get_y()
+    left_col_x = 10
+    right_col_x = 105
+    col_width = 90
+    
+    # Function for boxes
+    def print_colored_box(x, y, title, items, bg_color, title_color):
+        pdf.set_xy(x, y)
+        pdf.set_fill_color(*bg_color)
+        pdf.set_font("Helvetica", 'B', 10)
+        pdf.set_text_color(*title_color)
+        pdf.cell(col_width, 7, f"  {title}", ln=1, fill=True)
+        
+        pdf.set_font("Helvetica", '', 9)
         pdf.set_text_color(0, 0, 0)
-        pdf.ln(5)
+        pdf.set_x(x)
+        current_y = pdf.get_y() + 2
+        for item in items:
+            pdf.set_xy(x, current_y)
+            text = f"- {item}".encode('latin-1', 'replace').decode('latin-1')
+            pdf.multi_cell(col_width, 4, text)
+            current_y = pdf.get_y() + 1
+        return current_y
+
+    # Strengths (Left, Green)
+    y_end_left = print_colored_box(
+        left_col_x, y_insights, 
+        "STRENGTHS", 
+        audit_data.get('strengths', []), 
+        (220, 252, 231), (21, 128, 61)
+    )
     
-    # Strengths
-    if audit_data["strengths"]:
-        pdf.set_fill_color(235, 255, 235)
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, txt="4. STRENGTHS", ln=1, fill=True)
-        pdf.ln(2)
-        pdf.set_font("Arial", '', 11)
-        pdf.set_text_color(50, 150, 50)
-        for s in audit_data["strengths"]:
-            safe_text = f"- {s}".encode('latin-1', 'replace').decode('latin-1')
-            pdf.multi_cell(190, 7, txt=safe_text)
-        pdf.set_text_color(0, 0, 0)
-        pdf.ln(5)
+    # Risks (Right, Red)
+    y_end_right = print_colored_box(
+        right_col_x, y_insights, 
+        "RISK FACTORS", 
+        audit_data.get('red_flags', []), 
+        (254, 226, 226), (185, 28, 28)
+    )
     
-    # Action Plan
-    pdf.set_fill_color(240, 240, 250)
-    pdf.set_font("Arial", 'B', 12)
-    pdf.cell(0, 10, txt="5. ACTION PLAN", ln=1, fill=True)
+    # Sync Y to the taller box
+    new_y = max(y_end_left, y_end_right) + 8
+    
+    # --- ROW 4: ACTION PLAN (Full Width) ---
+    pdf.set_xy(10, new_y)
+    pdf.set_fill_color(240, 248, 255) # AliceBlue
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.set_text_color(30, 64, 175) # Blue-800
+    pdf.cell(190, 7, "  RECOMMENDED ACTION PLAN", ln=1, fill=True)
+    
+    pdf.set_font("Helvetica", '', 9)
+    pdf.set_text_color(0, 0, 0)
     pdf.ln(2)
-    pdf.set_font("Arial", '', 11)
-    for p in audit_data["plan"]:
-        safe_text = f"- {p}".encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(190, 7, txt=safe_text)
     
-    # Footer
-    pdf.set_y(-30)
-    pdf.set_font("Arial", 'I', 8)
-    pdf.cell(0, 10, "AI-generated report. For informational purposes only.", align='C')
+    for step in audit_data['plan']:
+        text = f"[ ] {step}".encode('latin-1', 'replace').decode('latin-1')
+        pdf.set_x(10)
+        pdf.multi_cell(190, 5, text)
+        pdf.ln(1)
+        
+    # --- FOOTER ---
+    pdf.set_y(-10)
+    pdf.set_font("Helvetica", 'I', 7)
+    pdf.set_text_color(150, 150, 150)
+    pdf.cell(0, 5, "Generated by LendReady AI. This report is an estimate and not an official bank document.", align='C')
     
     filename = f"report_{session_id}.pdf"
     path = f"backend/data/{filename}"
@@ -607,7 +715,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 
 నేను మీ AI లోన్ సలహాదారుడిని. ఒక ఎంపికను ఎంచుకోండి:
 
-**1.** లోన్ అర్హతను తನಿఖీ చేయండి 🏦
+**1.** లోన్ అర్హతను తనిఖీ చేయండి 🏦
 **2.** క్రెడిట్ స్కోర్ మెరుగుపరచండి 📈
 **3.** డాక్యుమెంట్ చెక్‌లిస్ట్ 📄
 **4.** నియమాలు మరియు నిబంధనలు 📜
@@ -660,9 +768,28 @@ Main aapka AI loan consultant hoon. Ek option chunein:
     }
 
 
+class RAGQuery(BaseModel):
+    query: str
+
+@app.post("/chat/clear/{session_id}")
+async def clear_chat_history(session_id: str):
+    """Clear chat history for a session"""
+    sessions.clear(session_id)
+    return {"status": "success", "message": "Chat history cleared"}
+
+
+@app.post("/rag/query")
+@limiter.limit("100/day", key_func=standard_key)
+async def rag_query(request: Request, query_data: RAGQuery):
+    """
+    Query RBI regulations using RAG.
+    """
+    answer = await query_rbi_docs(query_data.query)
+    return {"answer": answer}
+
+
 @app.post("/chat/voice")
-@limiter.limit("10000/day", key_func=whitelist_key)
-@limiter.limit("10/day", key_func=standard_key)
+@limiter.limit("100/day", key_func=standard_key)
 async def voice_chat(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -889,17 +1016,6 @@ USER MESSAGE:
     )
 
 
-
-class RAGQuery(BaseModel):
-    query: str
-
-@app.post("/rag/query")
-@limiter.limit("100/day", key_func=standard_key)
-async def rag_query(request: Request, query_data: RAGQuery):
-    """
-    Query RBI regulations using RAG.
-    """
-    answer = await query_rbi_docs(query_data.query)
     return {"answer": answer}
 
 
@@ -965,6 +1081,69 @@ def get_audio(session_id: str):
     if os.path.exists(path):
         return FileResponse(path, media_type="audio/mpeg")
     raise HTTPException(status_code=404, detail="Audio not ready yet")
+
+
+@app.get("/report/sample")
+def get_sample_report():
+    """Generate and return a Gold Standard sample PDF"""
+    try:
+        # Create a mock session with perfect data
+        sample_id = "sample_demo_123"
+        session = LoanSession(
+            session_id=sample_id,
+            annual_income=5000000.0,  # 50 Lakhs
+            monthly_debt=20000.0,     # Low debt
+            loan_amount=1000000.0,    # 10 Lakhs
+            payment_history_rating=60, # Perfect
+            credit_utilization=0.10,   # 10%
+            credit_history_years=8,
+            open_credit_lines=5,
+            recent_inquiries=0,
+            bankruptcy_history=0,
+            defaults_history=0
+        )
+        
+        # Calculate audit
+        audit = calculate_score_and_decision(session)
+        
+        # --- SHOWCASE OVERRIDE: Inject depth for the Demo Report ---
+        audit["score"] = 864  # Keep high score
+        audit["decision"] = "APPROVED"
+        audit["reason"] = "Your financial profile demonstrates strong stability with consistent income growth. While credit card utilization is slightly elevated, your impeccable repayment history and diverse credit mix make you a prime candidate for premium lending tiers."
+        
+        audit["red_flags"] = [
+            "Credit utilization ratio spiked to 45% in the last billing cycle (Ideal: <30%).",
+            "High frequency of small-ticket personal loan inquiries in Q3.",
+            "Average monthly balance dropped by 15% compared to the previous fiscal year."
+        ]
+        
+        audit["strengths"] = [
+            "Zero payment defaults recorded over a 7-year credit history.",
+            "Healthy mix of secured (Home Loan) and unsecured credit lines.",
+            "Debt-to-Income (DTI) ratio is at a healthy 28%, significantly below the 40% threshold.",
+            "Consistent income deposits detected from verified employer sources."
+        ]
+        
+        audit["plan"] = [
+            "Pay down credit card outstanding balance by ₹1.5L to optimize utilization score.",
+            "Avoid applying for new unsecured loans for 6 months to stabilize inquiry rate.",
+            "Maintain a minimum average quarterly balance (AQB) of ₹50,000 to improve banking variance score.",
+            "Consolidate two active consumer durable loans to reduce EMI clutter."
+        ]
+        # -----------------------------------------------------------
+        
+        # Generate PDF
+        filename = generate_pdf_sync(sample_id, audit)
+        path = f"backend/data/{filename}"
+        
+        return FileResponse(
+            path, 
+            filename="CreditSetu_Sample_Report.pdf",
+            media_type="application/pdf"
+        )
+    except Exception as e:
+        print(f"Sample Gen Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

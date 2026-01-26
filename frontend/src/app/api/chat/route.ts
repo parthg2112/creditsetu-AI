@@ -56,7 +56,7 @@ ${plan?.recommended_actions?.length > 0 ? `RECOMMENDED ACTIONS:\n${plan.recommen
     // 4. Stream the response with Gemini and the "Golden Prompt"
     const result = streamText({
         model: google('gemini-2.0-flash-exp'),
-        system: `You are the CreditSetu AI Underwriter (formerly LendReady) - a specialized MSME loan readiness advisor.
+        system: `You are the CreditSetu AI Underwriter (formerly CreditSetu) - a specialized MSME loan readiness advisor.
 
 SYSTEM IDENTITY:
 You are a Senior Credit Underwriter with 20 years of experience in MSME lending at major Indian banks. You are helpful, objective, and conservative. You speak in a professional but friendly tone, like a trusted financial advisor.

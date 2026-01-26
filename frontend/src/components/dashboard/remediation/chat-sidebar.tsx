@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, FormEvent } from "react";
-import { Send, Bot, Sparkles, Loader2 } from "lucide-react";
+import { Send, Bot, Sparkles, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -140,6 +140,32 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
                     <p className="text-xs text-green-600 font-medium">
                         {isLoading ? "Thinking..." : "Online"}
                     </p>
+                </div>
+
+                <div className="ml-auto">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={async () => {
+                            try {
+                                setMessages([{
+                                    id: "welcome",
+                                    role: "assistant",
+                                    content: healthScore
+                                        ? `Hi! I've analyzed your documents and calculated a **Health Score of ${healthScore}/100**. Ask me anything about your score, red flags, or how to improve your loan readiness.`
+                                        : "Hi! I'm your FinCo-Pilot. Upload your documents and I'll help you understand your loan readiness and how to improve it."
+                                }]);
+                                // Optional: Call backend to clear server-side history if exists
+                                // await fetch(`/api/chat/clear/${loanId}`, { method: 'POST' });
+                            } catch (e) {
+                                console.error("Failed to clear chat", e);
+                            }
+                        }}
+                        title="Clear Chat"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                 </div>
             </div>
 

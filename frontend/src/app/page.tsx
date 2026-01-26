@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Upload, Sparkles, MessageCircle, BarChart3, CheckCircle2, ChevronRight, Lock } from "lucide-react";
+import { ArrowRight, ShieldCheck, Upload, Sparkles, MessageCircle, BarChart3, CheckCircle2, ChevronRight, Lock, Twitter, Linkedin, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { auth } from "@/auth";
+import { SampleReportButton } from "@/components/landing/sample-report-button";
 
 export default async function Home() {
   const session = await auth();
@@ -28,7 +29,7 @@ export default async function Home() {
           <div className="flex items-center gap-4">
             {session ? (
               <Link href="/dashboard">
-                <Button className="hidden md:inline-flex rounded-full bg-[#2A3B52] px-6 font-semibold text-white shadow-lg shadow-[#2A3B52]/20 hover:bg-[#2A3B52]/90">
+                <Button className="hidden md:inline-flex rounded-full bg-[#D46B4F] px-6 font-semibold text-white shadow-lg shadow-[#D46B4F]/20 hover:bg-[#C45A3E]">
                   Go to Dashboard
                 </Button>
               </Link>
@@ -40,7 +41,7 @@ export default async function Home() {
                   </Button>
                 </Link>
                 <Link href="/dashboard">
-                  <Button className="hidden md:inline-flex rounded-full bg-[#2A3B52] px-6 font-semibold text-white shadow-lg shadow-[#2A3B52]/20 hover:bg-[#2A3B52]/90">
+                  <Button className="hidden md:inline-flex rounded-full bg-[#D46B4F] px-6 font-semibold text-white shadow-lg shadow-[#D46B4F]/20 hover:bg-[#C45A3E]">
                     Get Started
                   </Button>
                 </Link>
@@ -78,12 +79,12 @@ export default async function Home() {
               <div className="flex flex-col justify-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary w-fit">
                   <Sparkles className="mr-2 h-3.5 w-3.5 fill-primary/20" />
-                  Hackathon 2024 Finalist
+                  Hackathon 2025 Finalist
                 </div>
                 <div className="space-y-4">
                   <h1 className="font-serif text-4xl font-bold tracking-tight text-[#1F1E1D] sm:text-5xl xl:text-6xl/none">
                     Stop getting rejected. <br />
-                    <span className="text-[#2A3B52]">Get Loan Ready.</span>
+                    <span className="text-[#D46B4F]">Get Loan Ready.</span>
                   </h1>
                   <p className="max-w-[600px] text-lg text-muted-foreground md:text-xl leading-relaxed">
                     60% of MSME loans fail due to bad paperwork. Our AI auditor pre-checks your documents and builds your path to approval in minutes, not weeks.
@@ -91,16 +92,14 @@ export default async function Home() {
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link href="/dashboard">
-                    <Button size="lg" className="h-12 rounded-full px-8 text-base font-semibold shadow-xl shadow-[#2A3B52]/20 group bg-[#2A3B52] hover:bg-[#2A3B52]/90 text-white">
+                    <Button size="lg" className="h-12 rounded-full px-8 text-base font-semibold shadow-xl shadow-[#D46B4F]/20 group bg-[#D46B4F] hover:bg-[#C45A3E] text-white">
                       Start Your Free Audit
                       <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Button>
                   </Link>
-                  <Button variant="outline" size="lg" className="h-12 rounded-full px-8 text-base border-primary/20 text-primary hover:bg-primary/5">
-                    View Sample Report
-                  </Button>
+                  <SampleReportButton />
                 </div>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                {/* <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex -space-x-2">
                     {[1, 2, 3, 4].map((i) => (
                       <div key={i} className="h-8 w-8 rounded-full border-2 border-background bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-500">
@@ -109,11 +108,11 @@ export default async function Home() {
                     ))}
                   </div>
                   <p>Trusted by 200+ MSMEs to secure capital.</p>
-                </div>
+                </div> */}
               </div>
               <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
                 <div className="relative aspect-square w-full sm:aspect-[4/3] lg:aspect-square">
-                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-primary/10 to-transparent blur-2xl" />
+                  <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-[#D46B4F]/10 to-transparent blur-2xl" />
                   <Image
                     src="/images/hero.png"
                     alt="Loan Health Score Dashboard"
@@ -130,7 +129,7 @@ export default async function Home() {
         {/* Social Proof */}
         <section className="border-y border-border/50 bg-slate-50/50 py-10">
           <div className="container mx-auto px-4 max-w-7xl">
-            <p className="mb-6 text-center text-sm font-medium text-muted-foreground">Trusted by MSMEs applying to major lenders</p>
+            <p className="mb-6 text-center text-sm font-medium text-muted-foreground">Supports MSMEs applying to major lenders</p>
             <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
               {/* Mock Logos */}
               {['HDFC Bank', 'SBI', 'ICICI Bank', 'Bajaj Finserv', 'LendingKart'].map((brand) => (
@@ -157,22 +156,22 @@ export default async function Home() {
                   title: "1. Secure Ingestion",
                   desc: "Upload bank statements, ITR, and KYC into our bank-grade encrypted vault.",
                   icon: Upload,
-                  color: "text-blue-600",
-                  bg: "bg-blue-50"
+                  color: "text-orange-600",
+                  bg: "bg-orange-50"
                 },
                 {
                   title: "2. AI Deep Audit (RAG)",
                   desc: "Our engine reads every line, flagging red flags like bounced checks or low DTI ratios.",
                   icon: Sparkles,
-                  color: "text-indigo-600",
-                  bg: "bg-indigo-50"
+                  color: "text-amber-600",
+                  bg: "bg-amber-50"
                 },
                 {
                   title: "3. Actionable Roadmap",
                   desc: "Get a personalized step-by-step plan to improve your score before you apply.",
                   icon: CheckCircle2,
-                  color: "text-emerald-600",
-                  bg: "bg-emerald-50"
+                  color: "text-green-600",
+                  bg: "bg-green-50"
                 }
               ].map((step, idx) => (
                 <Card key={idx} className="group relative overflow-hidden border-border/50 bg-white/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
@@ -241,7 +240,7 @@ export default async function Home() {
                 />
               </div>
               <div className="space-y-8">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#D46B4F]/10 text-[#D46B4F]">
                   <MessageCircle className="h-6 w-6" />
                 </div>
                 <h2 className="font-serif text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
@@ -250,7 +249,7 @@ export default async function Home() {
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   Don't just see the problem, fix it. Our AI suggests specific actions—like "Lowering EMI burden" or "Consolidating debt"—to improve your creditworthiness score in real-time.
                 </p>
-                <Button variant="link" className="p-0 h-auto text-primary font-semibold text-lg hover:no-underline group">
+                <Button variant="link" className="p-0 h-auto text-[#D46B4F] font-semibold text-lg hover:no-underline group">
                   See how remediation works <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>
@@ -260,8 +259,8 @@ export default async function Home() {
         </section >
 
         {/* CTA Section */}
-        <section className="py-24 bg-[#2A3B52] text-white relative overflow-hidden">
-          {/* Noise texture using inline CSS instead of external URL */}
+        <section className="py-24 bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white relative overflow-hidden">
+          {/* Noise texture */}
           <div
             className="absolute inset-0 opacity-10"
             style={{
@@ -272,71 +271,76 @@ export default async function Home() {
             <h2 className="font-serif text-3xl font-bold sm:text-4xl md:text-5xl">
               Ready to get funded?
             </h2>
-            <p className="text-xl text-primary-foreground/80 max-w-2xl mx-auto">
-              Join thousands of MSMEs who prepared their documents with LendReady AI and got approved 3x faster.
+            <p className="text-xl text-white/90 max-w-2xl mx-auto">
+              Join thousands of MSMEs who prepared their documents with CreditSetu AI and got approved 3x faster.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link href="/dashboard">
-                <Button size="lg" className="h-14 rounded-full bg-white text-[#2A3B52] hover:bg-white/90 px-8 text-lg font-bold shadow-2xl">
+                <Button size="lg" className="h-14 rounded-full bg-white text-[#D46B4F] hover:bg-white/90 px-8 text-lg font-bold shadow-2xl">
                   Get Your Free Score
                 </Button>
               </Link>
-              <p className="text-sm opacity-70 mt-4 sm:mt-0 flex items-center gap-2">
+              <p className="text-sm opacity-80 mt-4 sm:mt-0 flex items-center gap-2">
                 <Lock className="h-4 w-4" /> Bank-grade encryption
               </p>
             </div>
           </div>
         </section>
-      </main>
 
-      {/* Footer */}
-      < footer className="bg-slate-950 text-slate-300 py-12 border-t border-slate-900" >
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="grid gap-8 md:grid-cols-4 lg:grid-cols-5">
-            <div className="col-span-2">
-              <div className="flex items-center gap-2 mb-4 text-white">
-                <ShieldCheck className="h-6 w-6" />
-                <span className="font-serif text-xl font-bold">LendReady AI</span>
+        {/* Footer */}
+        < footer className="bg-[#2D1810] text-[#E0D8D6] py-12 border-t border-[#3E241A]" >
+          <div className="container mx-auto px-4 max-w-7xl">
+            <div className="grid gap-8 md:grid-cols-4 lg:grid-cols-5">
+              <div className="col-span-2">
+                <div className="flex items-center gap-2 mb-4 text-white">
+                  <ShieldCheck className="h-6 w-6 text-[#D46B4F]" />
+                  <span className="font-serif text-xl font-bold">CreditSetu AI</span>
+                </div>
+                <p className="text-[#A89894] max-w-xs mb-6">
+                  Empowering MSMEs with AI-driven insights for faster, fairer loan approvals.
+                </p>
+                <div className="flex gap-4">
+                  <Link href="#" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
+                    <Twitter className="h-4 w-4" />
+                  </Link>
+                  <Link href="#" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
+                    <Linkedin className="h-4 w-4" />
+                  </Link>
+                  <Link href="#" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
+                    <Instagram className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
-              <p className="text-slate-400 max-w-xs mb-6">
-                Empowering MSMEs with AI-driven insights for faster, fairer loan approvals.
-              </p>
-              <div className="flex gap-4">
-                {/* Social Icons Placeholder */}
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-8 w-8 rounded bg-slate-900 hover:bg-slate-800 transition-colors" />
-                ))}
+              <div>
+                <h3 className="font-semibold text-white mb-4">Product</h3>
+                <ul className="space-y-3 nav-links">
+                  <li><Link href="#" className="hover:text-white transition-colors">Features</Link></li>
+                  <li><Link href="#" className="hover:text-white transition-colors">Security</Link></li>
+                  <li><Link href="#" className="hover:text-white transition-colors">Pricing</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-4">Company</h3>
+                <ul className="space-y-3 nav-links">
+                  <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
+                  <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
+                  <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
+                </ul>
+              </div>
+              <div>
+                <h3 className="font-semibold text-white mb-4">Legal</h3>
+                <ul className="space-y-3 nav-links">
+                  <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                  <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                </ul>
               </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-white mb-4">Product</h3>
-              <ul className="space-y-3 nav-links">
-                <li><Link href="#" className="hover:text-white transition-colors">Features</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Security</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Pricing</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-4">Company</h3>
-              <ul className="space-y-3 nav-links">
-                <li><Link href="#" className="hover:text-white transition-colors">About Us</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Contact</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-4">Legal</h3>
-              <ul className="space-y-3 nav-links">
-                <li><Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Terms of Service</Link></li>
-              </ul>
+            <div className="border-t border-[#3E241A] mt-12 pt-8 text-center text-sm text-[#8B736E]">
+              © 2025 CreditSetu AI. All rights reserved.
             </div>
           </div>
-          <div className="border-t border-slate-900 mt-12 pt-8 text-center text-sm text-slate-500">
-            © 2024 LendReady AI. All rights reserved.
-          </div>
-        </div>
-      </footer >
+        </footer >
+      </main>
     </div >
   );
 }
