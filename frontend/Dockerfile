@@ -20,6 +20,9 @@ ENV DATABASE_URL=postgres://dummy:dummy@localhost:5432/dummy
 ENV NEXT_PUBLIC_SUPABASE_URL=https://dummy.supabase.co
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy
 
+ARG NEXT_PUBLIC_PYTHON_BACKEND_URL
+ENV NEXT_PUBLIC_PYTHON_BACKEND_URL=$NEXT_PUBLIC_PYTHON_BACKEND_URL
+
 RUN bun run build
 
 # Production image, copy all the files and run next
