@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react";
 import { Loan } from "@/types/loan";
 import { LoanCard } from "./loan-card";
 import { useRef, useState, useEffect } from "react";
@@ -69,7 +69,7 @@ export function MarketplaceSection({ title, loans, selectedLoans, onToggleSelect
                         style={{ transform: "translate(-50%, -50%)" }}
                         aria-label="Scroll left"
                     >
-                        <ChevronLeft className="w-6 h-6 text-foreground" />
+                        <CaretLeft className="w-6 h-6 text-foreground" />
                     </button>
                 )}
 
@@ -98,7 +98,7 @@ export function MarketplaceSection({ title, loans, selectedLoans, onToggleSelect
                         style={{ transform: "translate(50%, -50%)" }}
                         aria-label="Scroll right"
                     >
-                        <ChevronRight className="w-6 h-6 text-foreground" />
+                        <CaretRight className="w-6 h-6 text-foreground" />
                     </button>
                 )}
             </div>

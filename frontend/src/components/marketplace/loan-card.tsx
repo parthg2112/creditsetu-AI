@@ -88,9 +88,7 @@ export function LoanCard({ loan, isSelected, onToggleSelect }: LoanCardProps) {
                 </label>
 
                 {!isSelected && (
-                    <button className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
-                        {t('apply_now')}
-                    </button>
+                    null
                 )}
             </div>
         </motion.div>

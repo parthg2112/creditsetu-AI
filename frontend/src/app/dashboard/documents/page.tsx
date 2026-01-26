@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { FormInput, Upload, FileStack, Sparkles } from "lucide-react";
+import { Keyboard, UploadSimple, Files, Sparkle } from "@phosphor-icons/react";
 import { createDocumentRecord } from "@/app/actions";
 
 export default function DocumentsPage() {
@@ -136,7 +136,7 @@ export default function DocumentsPage() {
                             value="upload"
                             className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-900"
                         >
-                            <Upload className="h-4 w-4 mr-2" />
+                            <UploadSimple className="h-4 w-4 mr-2" />
                             <span className="hidden sm:inline">Upload Documents</span>
                             <span className="sm:hidden">Upload</span>
                         </TabsTrigger>
@@ -144,7 +144,7 @@ export default function DocumentsPage() {
                             value="manual"
                             className="rounded-xl py-3 data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-900"
                         >
-                            <FormInput className="h-4 w-4 mr-2" />
+                            <Keyboard className="h-4 w-4 mr-2" />
                             <span className="hidden sm:inline">Manual Input</span>
                             <span className="sm:hidden">Manual</span>
                         </TabsTrigger>
@@ -155,7 +155,7 @@ export default function DocumentsPage() {
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Upload className="h-5 w-5 text-primary" />
+                                    <UploadSimple className="h-5 w-5 text-primary" />
                                     Document Upload
                                 </CardTitle>
                                 <CardDescription>
@@ -175,7 +175,7 @@ export default function DocumentsPage() {
                         <Card className="border-border/50 shadow-sm bg-slate-50/50 dark:bg-slate-900/50">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-base">
-                                    <FileStack className="h-4 w-4 text-primary" />
+                                    <Files className="h-4 w-4 text-primary" />
                                     Or try with sample documents
                                 </CardTitle>
                                 <CardDescription className="text-sm">
@@ -197,7 +197,7 @@ export default function DocumentsPage() {
                         <Card className="border-border/50 shadow-sm">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Sparkles className="h-5 w-5 text-primary" />
+                                    <Sparkle className="h-5 w-5 text-primary" />
                                     Quick Financial Assessment
                                 </CardTitle>
                                 <CardDescription>

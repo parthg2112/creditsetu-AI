@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Folder, ClipboardCheck, TrendingUp, Settings, ShieldCheck, LogOut, Menu } from "lucide-react";
+import { SquaresFour, Folder, ClipboardText, TrendUp, Gear, ShieldCheck, SignOut, List } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -10,11 +10,11 @@ import { NavItem } from "./nav-item";
 import { Separator } from "@/components/ui/separator";
 
 const NAV_ITEMS = [
-    { label: "Chat", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Chat", href: "/dashboard", icon: SquaresFour },
     { label: "My Documents", href: "/dashboard/documents", icon: Folder },
-    { label: "Audit Report", href: "/dashboard/audit", icon: ClipboardCheck },
-    { label: "Remediation Plan", href: "/dashboard/remediation", icon: TrendingUp },
-    { label: "Settings", href: "/dashboard/settings", icon: Settings },
+    { label: "Audit Report", href: "/dashboard/audit", icon: ClipboardText },
+    { label: "Remediation Plan", href: "/dashboard/remediation", icon: TrendUp },
+    { label: "Settings", href: "/dashboard/settings", icon: Gear },
 ];
 
 export function Sidebar() {
@@ -48,7 +48,7 @@ export function Sidebar() {
                         <p className="truncate text-xs text-[#6B7280] dark:text-[#9CA3AF]">MSME Owner</p>
                     </div>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-[#6B7280] hover:text-red-500 dark:hover:text-red-400">
-                        <LogOut className="h-4 w-4" />
+                        <SignOut className="h-4 w-4" />
                         <span className="sr-only">Log out</span>
                     </Button>
                 </div>
@@ -64,7 +64,7 @@ export function MobileSidebar() {
         <Sheet>
             <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
-                    <Menu className="h-5 w-5 text-[#6B7280]" />
+                    <List className="h-5 w-5 text-[#6B7280]" />
                     <span className="sr-only">Toggle menu</span>
                 </Button>
             </SheetTrigger>
@@ -98,7 +98,7 @@ export function MobileSidebar() {
                         </div>
                         <div className="mt-4">
                             <Button variant="outline" className="w-full justify-start text-[#6B7280] hover:text-red-500 border-[#E5E5E5] dark:border-[#404040] transition-colors">
-                                <LogOut className="mr-2 h-4 w-4" />
+                                <SignOut className="mr-2 h-4 w-4" />
                                 Log out
                             </Button>
                         </div>

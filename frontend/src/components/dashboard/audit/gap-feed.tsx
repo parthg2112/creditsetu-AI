@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AlertCircle, CheckCircle2, Lightbulb } from "lucide-react";
+import { WarningCircle, CheckCircle, Lightbulb } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ interface FeedItemProps {
 function FeedItem({ type, content, index }: FeedItemProps) {
     const config = {
         gap: {
-            icon: AlertCircle,
+            icon: WarningCircle,
             bgColor: "bg-red-50 dark:bg-red-950/30",
             iconBg: "bg-red-100 dark:bg-red-900",
             iconColor: "text-red-600",
@@ -28,7 +28,7 @@ function FeedItem({ type, content, index }: FeedItemProps) {
             borderColor: "border-l-red-500"
         },
         strength: {
-            icon: CheckCircle2,
+            icon: CheckCircle,
             bgColor: "bg-green-50 dark:bg-green-950/30",
             iconBg: "bg-green-100 dark:bg-green-900",
             iconColor: "text-green-600",
@@ -87,7 +87,7 @@ export function GapFeed({ redFlags, strengths, recommendedActions }: GapFeedProp
                 {redFlags.length > 0 && (
                     <div className="space-y-3">
                         <h4 className="text-sm font-semibold text-red-600 flex items-center gap-2">
-                            <AlertCircle className="h-4 w-4" />
+                            <WarningCircle className="h-4 w-4" />
                             Issues to Address ({redFlags.length})
                         </h4>
                         <div className="space-y-2">
@@ -102,7 +102,7 @@ export function GapFeed({ redFlags, strengths, recommendedActions }: GapFeedProp
                 {strengths.length > 0 && (
                     <div className="space-y-3">
                         <h4 className="text-sm font-semibold text-green-600 flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4" />
+                            <CheckCircle className="h-4 w-4" />
                             Your Strengths ({strengths.length})
                         </h4>
                         <div className="space-y-2">

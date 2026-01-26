@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LucideIcon } from "lucide-react";
+import { Icon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface NavItemProps {
     href: string;
-    icon: LucideIcon;
+    icon: Icon;
     label: string;
 }
 

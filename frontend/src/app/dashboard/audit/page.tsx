@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState } from "react";
 import { ScoreGauge } from "@/components/dashboard/audit/score-gauge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, IndianRupee, PieChart, ShieldCheck, ArrowRight, BadgeCheck, AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
+import { WarningCircle, CurrencyInr, ChartPie, ShieldCheck, ArrowRight, SealCheck, Warning, CircleNotch, CheckCircle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -72,7 +72,7 @@ export default function AuditPage() {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="text-center space-y-4">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+                    <CircleNotch className="h-8 w-8 animate-spin mx-auto text-primary" />
                     <p className="text-muted-foreground">Loading your audit results...</p>
                 </div>
             </div>
@@ -98,7 +98,7 @@ export default function AuditPage() {
             {/* Top Summary Banner */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 p-8 shadow-sm dark:from-slate-900 dark:to-slate-800 dark:border-slate-800">
                 <div className="absolute top-0 right-0 p-3 opacity-10">
-                    <PieChart className="h-48 w-48 text-primary" />
+                    <ChartPie className="h-48 w-48 text-primary" />
                 </div>
 
                 <div className="relative flex flex-col md:flex-row items-center gap-8 md:gap-12">
@@ -133,12 +133,12 @@ export default function AuditPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Strengths Found</CardTitle>
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <CheckCircle className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-600">{strengths.length}</div>
                         <Badge variant="outline" className="mt-2 bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
-                            <BadgeCheck className="mr-1 h-3 w-3" /> Positive Indicators
+                            <SealCheck className="mr-1 h-3 w-3" /> Positive Indicators
                         </Badge>
                     </CardContent>
                 </Card>
@@ -147,7 +147,7 @@ export default function AuditPage() {
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-muted-foreground">Red Flags</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        <Warning className="h-4 w-4 text-red-500" />
                     </CardHeader>
                     <CardContent>
                         <div className={`text-2xl font-bold ${redFlags.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
@@ -160,7 +160,7 @@ export default function AuditPage() {
                                 : "mt-2 bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800"
                             }
                         >
-                            <AlertCircle className="mr-1 h-3 w-3" />
+                            <WarningCircle className="mr-1 h-3 w-3" />
                             {redFlags.length > 0 ? 'Needs Attention' : 'All Clear'}
                         </Badge>
                     </CardContent>
@@ -183,7 +183,7 @@ export default function AuditPage() {
                                     : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400"
                                 }`}
                         >
-                            <PieChart className="mr-1 h-3 w-3" />
+                            <ChartPie className="mr-1 h-3 w-3" />
                             {currentScore >= 70 ? 'Good' : currentScore >= 50 ? 'Fair' : 'Needs Work'}
                         </Badge>
                     </CardContent>
@@ -194,7 +194,7 @@ export default function AuditPage() {
             {redFlags.length > 0 && (
                 <div className="space-y-4">
                     <h3 className="text-xl font-serif font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                        <Warning className="h-5 w-5 text-red-500" />
                         Issues Detected by AI
                     </h3>
 
@@ -203,7 +203,7 @@ export default function AuditPage() {
                             <Card key={idx} className="border-l-4 border-l-red-500 shadow-sm transition-all hover:shadow-md">
                                 <CardContent className="flex items-start gap-4 p-6">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-950">
-                                        <AlertCircle className="h-5 w-5" />
+                                        <WarningCircle className="h-5 w-5" />
                                     </div>
                                     <div className="space-y-1 flex-1">
                                         <h4 className="text-base font-semibold text-slate-900 dark:text-slate-100">
@@ -222,7 +222,7 @@ export default function AuditPage() {
             {strengths.length > 0 && (
                 <div className="space-y-4">
                     <h3 className="text-xl font-serif font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        <CheckCircle className="h-5 w-5 text-green-500" />
                         Strengths Identified
                     </h3>
 
@@ -231,7 +231,7 @@ export default function AuditPage() {
                             <Card key={idx} className="border-l-4 border-l-green-500 shadow-sm transition-all hover:shadow-md">
                                 <CardContent className="flex items-start gap-4 p-6">
                                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-950">
-                                        <CheckCircle2 className="h-5 w-5" />
+                                        <CheckCircle className="h-5 w-5" />
                                     </div>
                                     <div className="space-y-1 flex-1">
                                         <p className="text-sm text-slate-700 dark:text-slate-300">{strength}</p>

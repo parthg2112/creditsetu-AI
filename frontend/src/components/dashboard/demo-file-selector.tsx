@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileText, Download, Sparkles, Loader2 } from "lucide-react";
+import { FileText, DownloadSimple, Sparkle, CircleNotch } from "@phosphor-icons/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -112,12 +112,12 @@ export function DemoFileSelector({ onSelectFile, selectedFileId, isLoading }: De
                     >
                         {isLoading ? (
                             <>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                <CircleNotch className="mr-2 h-4 w-4 animate-spin" />
                                 Analyzing...
                             </>
                         ) : (
                             <>
-                                <Sparkles className="mr-2 h-4 w-4" />
+                                <Sparkle className="mr-2 h-4 w-4" />
                                 Analyze Selected Document
                             </>
                         )}

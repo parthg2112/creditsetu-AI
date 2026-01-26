@@ -1,11 +1,13 @@
+'use client'
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, Upload, Sparkles, MessageCircle, BarChart3, CheckCircle2, ChevronRight, Lock, Twitter, Linkedin, Instagram } from "lucide-react";
+import { ArrowRight, SealCheck, UploadSimple, Sparkle, ChatCircle, ChartBar, CheckCircle, CaretRight, Lock, TwitterLogo, LinkedinLogo, InstagramLogo } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { auth } from "@/auth";
 import { SampleReportButton } from "@/components/landing/sample-report-button";
+import { FinanceAnimation } from "@/components/landing/finance-animation";
 
 
 export default async function Home() {
@@ -18,14 +20,14 @@ export default async function Home() {
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white">
-              <ShieldCheck className="h-5 w-5" />
+              <SealCheck className="h-5 w-5" weight="fill" />
             </div>
             <span className="font-serif text-xl font-bold tracking-tight text-[#1F1E1D]">CreditSetu AI</span>
           </div>
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <Link href="#how-it-works" className="hover:text-primary transition-colors">How it Works</Link>
             <Link href="#features" className="hover:text-primary transition-colors">Features</Link>
-            <Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link>
+            {/* <Link href="#pricing" className="hover:text-primary transition-colors">Pricing</Link> */}
           </nav>
           <div className="flex items-center gap-4">
             {session ? (
@@ -79,7 +81,7 @@ export default async function Home() {
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
               <div className="flex flex-col justify-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 {/* <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary w-fit">
-                  <Sparkles className="mr-2 h-3.5 w-3.5 fill-primary/20" />
+                  <Sparkle className="mr-2 h-3.5 w-3.5 fill-primary/20" />
                   Hackathon 2025 Finalist
                 </div> */}
                 <div className="space-y-4">
@@ -114,13 +116,7 @@ export default async function Home() {
               <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none h-[500px] animate-in fade-in zoom-in-95 duration-1000 delay-200">
                 <div className="relative aspect-square w-full sm:aspect-[4/3] lg:aspect-square">
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-[#D46B4F]/10 to-transparent blur-2xl" />
-                  <Image
-                    src="/Gemini_Generated_Image_2mnjwy2mnjwy2mnj.png"
-                    alt="Loan Health Score Dashboard"
-                    fill
-                    className="object-contain drop-shadow-2xl transition-all duration-500 hover:scale-[1.02]"
-                    priority
-                  />
+                  <FinanceAnimation />
                 </div>
               </div>
             </div>
@@ -169,19 +165,19 @@ export default async function Home() {
             <div className="grid gap-8 md:grid-cols-3">
               {[
                 {
-                  title: "1. Secure Ingestion",
-                  desc: "Upload bank statements, ITR, and KYC into our bank-grade encrypted vault.",
-                  icon: Upload,
+                  title: "1. Interactive Assessment",
+                  desc: "Chat with our AI or use voice commands to provide your financial details instantly.",
+                  icon: ChatCircle,
                 },
                 {
-                  title: "2. AI Deep Audit (RAG)",
-                  desc: "Our engine reads every line, flagging red flags like bounced checks or low DTI ratios.",
-                  icon: Sparkles,
+                  title: "2. Instant Health Check",
+                  desc: "Get your real-time Credit Readiness Score™ and thorough analysis of your eligibility.",
+                  icon: Sparkle,
                 },
                 {
-                  title: "3. Actionable Roadmap",
-                  desc: "Get a personalized step-by-step plan to improve your score before you apply.",
-                  icon: CheckCircle2,
+                  title: "3. Guidance & Funding",
+                  desc: "Receive a tailored remediation plan and get matched with lenders who want to fund you.",
+                  icon: CheckCircle,
                 }
               ].map((step, idx) => (
                 <Card key={idx} className="group relative overflow-hidden border-none bg-[#FAFAF8] transition-all duration-500 ease-out hover:shadow-[0_20px_40px_-12px_rgba(212,107,79,0.1)] hover:-translate-y-2 hover:scale-[1.02] active:scale-[0.98] rounded-[2rem]">
@@ -210,19 +206,19 @@ export default async function Home() {
             <div className="grid gap-16 lg:grid-cols-2 items-center">
               <div className="space-y-8">
                 <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FDF4F0] text-[#D46B4F] transition-transform duration-500 hover:rotate-12 hover:scale-110">
-                  <BarChart3 className="h-7 w-7" />
+                  <ChartBar className="h-7 w-7" />
                 </div>
                 <h2 className="font-serif text-4xl font-bold tracking-tight text-[#2D1810] sm:text-5xl">
-                  The RAG Underwriter Engine.
+                  Smart Financial Assessment.
                 </h2>
                 <p className="text-xl text-[#5D4E49] leading-relaxed">
-                  Most rejections happen because of hidden patterns you miss. Our Retrieval-Augmented Generation (RAG) agent scans years of transaction history to identify "Cash Flow Gaps" and "Cheque Bounces" that ruin credibility.
+                  Our AI doesn't just look at credit scores. It interprets your income, debt obligations, and repayment history through a conversational interface to build a holistic financial profile that lenders trust.
                 </p>
                 <ul className="space-y-5">
                   {['Identifies 99% of rejection triggers', 'Analyzes banking psychology', 'Benchmarks against lender criteria'].map((item) => (
                     <li key={item} className="flex items-center gap-4 group">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FDF4F0] text-[#D46B4F] group-hover:bg-[#D46B4F] group-hover:text-white transition-all duration-300 group-hover:scale-110">
-                        <CheckCircle2 className="h-5 w-5" />
+                        <CheckCircle className="h-5 w-5" />
                       </div>
                       <span className="font-medium text-[#4A3B36] text-lg transition-colors group-hover:text-[#D46B4F]">{item}</span>
                     </li>
@@ -253,7 +249,7 @@ export default async function Home() {
               </div>
               <div className="space-y-8">
                 <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FDF4F0] text-[#D46B4F] transition-transform duration-500 hover:rotate-12 hover:scale-110">
-                  <MessageCircle className="h-7 w-7" />
+                  <ChatCircle className="h-7 w-7" />
                 </div>
                 <h2 className="font-serif text-4xl font-bold tracking-tight text-[#2D1810] sm:text-5xl">
                   Your AI Financial Co-Pilot.
@@ -262,7 +258,7 @@ export default async function Home() {
                   Don't just see the problem, fix it. Our AI suggests specific actions—like "Lowering EMI burden" or "Consolidating debt"—to improve your creditworthiness score in real-time.
                 </p>
                 <Button variant="link" className="p-0 h-auto text-[#D46B4F] font-bold text-lg hover:no-underline group items-center">
-                  See how remediation works <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  See how remediation works <CaretRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>
             </div>
@@ -305,7 +301,7 @@ export default async function Home() {
             <div className="grid gap-8 md:grid-cols-4 lg:grid-cols-5">
               <div className="col-span-2">
                 <div className="flex items-center gap-2 mb-4 text-white">
-                  <ShieldCheck className="h-6 w-6 text-[#D46B4F]" />
+                  <SealCheck className="h-6 w-6 text-[#D46B4F]" weight="fill" />
                   <span className="font-serif text-xl font-bold">CreditSetu AI</span>
                 </div>
                 <p className="text-[#CFC1BD] max-w-xs mb-6">
@@ -313,13 +309,13 @@ export default async function Home() {
                 </p>
                 <div className="flex gap-4">
                   <Link href="#" aria-label="Twitter" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
-                    <Twitter className="h-4 w-4" />
+                    <TwitterLogo className="h-4 w-4" />
                   </Link>
                   <Link href="#" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
-                    <Linkedin className="h-4 w-4" />
+                    <LinkedinLogo className="h-4 w-4" />
                   </Link>
                   <Link href="#" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
-                    <Instagram className="h-4 w-4" />
+                    <InstagramLogo className="h-4 w-4" />
                   </Link>
                 </div>
               </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Dot } from "lucide-react";
+import { Check, Dot } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface ProgressTrackerProps {

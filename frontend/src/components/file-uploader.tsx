@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, CheckCircle2 } from "lucide-react"
+import { FileText, CheckCircle } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -98,7 +98,7 @@ export function FileUploader() {
 
                 {result && (
                     <Alert className="bg-green-50 border-green-200">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-green-600" />
                         <AlertTitle className="text-green-800 font-semibold">Ready</AlertTitle>
                         <AlertDescription className="text-green-700">
                             Analysis triggered successfully.

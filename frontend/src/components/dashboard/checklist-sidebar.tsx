@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle, Circle } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export function ChecklistSidebar({ files }: ChecklistSidebarProps) {
                 {REQUIREMENTS.map((req, index) => (
                     <div key={index} className="flex items-start gap-3">
                         {req.fulfilled ? (
-                            <CheckCircle2 className="mt-0.5 h-5 w-5 text-green-600 shrink-0" />
+                            <CheckCircle className="mt-0.5 h-5 w-5 text-green-600 shrink-0" />
                         ) : (
                             <Circle className="mt-0.5 h-5 w-5 text-slate-300 shrink-0" />
                         )}

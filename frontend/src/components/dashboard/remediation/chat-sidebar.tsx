@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, FormEvent } from "react";
-import { Send, Bot, Sparkles, Loader2, Trash2 } from "lucide-react";
+import { PaperPlaneRight, Robot, Sparkle, CircleNotch, Trash } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -128,14 +128,14 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
             <div className="flex items-center gap-2 p-4 border-b border-border/50 bg-white dark:bg-slate-950">
                 <div className="relative">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Bot className="h-5 w-5" />
+                        <Robot className="h-5 w-5" />
                     </div>
                     <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-white dark:border-slate-950" />
                 </div>
                 <div>
                     <h3 className="font-semibold text-sm flex items-center gap-1">
                         FinCo-Pilot
-                        <Sparkles className="h-3 w-3 text-amber-500" />
+                        <Sparkle className="h-3 w-3 text-amber-500" />
                     </h3>
                     <p className="text-xs text-green-600 font-medium">
                         {isLoading ? "Thinking..." : "Online"}
@@ -164,7 +164,7 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
                         }}
                         title="Clear Chat"
                     >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash className="h-4 w-4" />
                     </Button>
                 </div>
             </div>
@@ -176,7 +176,7 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
                         <Avatar className="h-8 w-8 mt-1 border border-border shrink-0">
                             {msg.role === 'assistant' ? (
                                 <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground">
-                                    <Bot className="h-4 w-4" />
+                                    <Robot className="h-4 w-4" />
                                 </div>
                             ) : (
                                 <AvatarFallback>RS</AvatarFallback>
@@ -204,12 +204,12 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
                     <div className="flex gap-3">
                         <Avatar className="h-8 w-8 mt-1 border border-border flex-shrink-0">
                             <div className="flex h-full w-full items-center justify-center bg-primary text-primary-foreground">
-                                <Bot className="h-4 w-4" />
+                                <Robot className="h-4 w-4" />
                             </div>
                         </Avatar>
                         <div className="rounded-2xl rounded-tl-sm p-3 bg-white dark:bg-slate-800 border border-border/50 shadow-sm">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <CircleNotch className="h-4 w-4 animate-spin" />
                                 Analyzing your documents...
                             </div>
                         </div>
@@ -250,9 +250,9 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
                         disabled={!inputValue.trim() || isLoading}
                     >
                         {isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <CircleNotch className="h-4 w-4 animate-spin" />
                         ) : (
-                            <Send className="h-4 w-4" />
+                            <PaperPlaneRight className="h-4 w-4" />
                         )}
                     </Button>
                 </div>

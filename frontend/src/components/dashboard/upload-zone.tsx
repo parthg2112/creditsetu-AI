@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { UploadCloud, FileText, X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { CloudArrowUp, FileText, X, CircleNotch, CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -231,11 +231,11 @@ export function UploadZone({ onFilesChanged, files, onProcessingComplete }: Uplo
         switch (status) {
             case "uploading":
             case "processing":
-                return <Loader2 className="h-4 w-4 animate-spin text-primary" />;
+                return <CircleNotch className="h-4 w-4 animate-spin text-primary" />;
             case "completed":
-                return <CheckCircle2 className="h-4 w-4 text-green-500" />;
+                return <CheckCircle className="h-4 w-4 text-green-500" />;
             case "failed":
-                return <AlertCircle className="h-4 w-4 text-red-500" />;
+                return <WarningCircle className="h-4 w-4 text-red-500" />;
             default:
                 return null;
         }
@@ -280,9 +280,9 @@ export function UploadZone({ onFilesChanged, files, onProcessingComplete }: Uplo
                 <input {...getInputProps()} />
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-slate-800">
                     {hasProcessingFiles ? (
-                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <CircleNotch className="h-10 w-10 animate-spin text-primary" />
                     ) : (
-                        <UploadCloud className="h-10 w-10" />
+                        <CloudArrowUp className="h-10 w-10" />
                     )}
                 </div>
                 <div className="text-center space-y-1">

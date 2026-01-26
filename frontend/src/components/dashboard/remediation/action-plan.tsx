@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, AlertTriangle, CheckCircle2, Lightbulb } from "lucide-react";
+import { Info, Warning, CheckCircle, Lightbulb } from "@phosphor-icons/react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +74,7 @@ export function ActionPlan({ redFlags, strengths, recommendedActions, summary }:
                         <Card className="border-red-200 dark:border-red-900">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base flex items-center gap-2 text-red-700 dark:text-red-400">
-                                    <AlertTriangle className="h-4 w-4" />
+                                    <Warning className="h-4 w-4" />
                                     Red Flags ({redFlags.length})
                                 </CardTitle>
                             </CardHeader>
@@ -96,7 +96,7 @@ export function ActionPlan({ redFlags, strengths, recommendedActions, summary }:
                         <Card className="border-green-200 dark:border-green-900">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-base flex items-center gap-2 text-green-700 dark:text-green-400">
-                                    <CheckCircle2 className="h-4 w-4" />
+                                    <CheckCircle className="h-4 w-4" />
                                     Strengths ({strengths.length})
                                 </CardTitle>
                             </CardHeader>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, FormEvent, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3, Mic, Trash2, Landmark, TrendingUp, FileText, ShieldCheck, Star } from "lucide-react";
+import { PaperPlaneRight, Robot, CircleNotch, Sparkle, ChatCircle, ChartBar, Microphone, Trash, Bank, TrendUp, FileText, SealCheck, Star } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -140,10 +140,13 @@ export function SplitViewDashboard() {
                 setSuggestedQuestions(data.suggested_questions || []);
 
                 if (data.chat_history && data.chat_history.length > 0) {
-                    setMessages(data.chat_history.map((msg: any) => ({
-                        ...msg,
-                        id: `hist-${Date.now()}-${Math.random()}`
-                    })));
+                    setMessages(prev => {
+                        if (prev.length > 0) return prev; // Avoid duplicate hydration
+                        return data.chat_history.map((msg: any) => ({
+                            ...msg,
+                            id: `hist-${Date.now()}-${Math.random()}`
+                        }));
+                    });
                 } else {
                     addMessage({
                         role: "assistant",
@@ -659,7 +662,7 @@ export function SplitViewDashboard() {
             <div className="flex items-center gap-3 p-4 border-b border-[#E5E5E5] dark:border-[#30302E] bg-white dark:bg-[#2B2A29]">
                 <div className="relative">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white shadow-sm">
-                        <Star className="h-5 w-5 fill-current" />
+                        <SealCheck className="h-5 w-5 fill-current" weight="fill" />
                     </div>
                     <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-[#2B2A29] ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} />
                 </div>
@@ -678,7 +681,7 @@ export function SplitViewDashboard() {
                                 className="h-8 w-8 text-[#D46B4F] hover:text-[#C45A3E] hover:bg-[#FDF4F0]"
                                 title="Clear Chat"
                             >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash className="h-4 w-4" />
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md">
@@ -730,7 +733,7 @@ export function SplitViewDashboard() {
                         )}>
                             {msg.role === 'assistant' ? (
                                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white rounded-full">
-                                    <Star className="h-4 w-4 fill-current" />
+                                    <SealCheck className="h-4 w-4 fill-current" weight="fill" />
                                 </div>
                             ) : (
                                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -750,7 +753,7 @@ export function SplitViewDashboard() {
                                     : 'bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] rounded-tl-sm'
                             )}>
                                 {msg.role === 'assistant' ? (
-                                    msg.content.includes("Welcome to CreditSetu AI") ? (
+                                    (msg.content && msg.content.includes("Welcome to CreditSetu AI")) ? (
                                         <div className="flex flex-col gap-4">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-lg font-semibold text-[#1F1E1D] dark:text-[#ECECEC]">{t('welcome_message')}</span>
@@ -759,10 +762,10 @@ export function SplitViewDashboard() {
                                             <p className="text-muted-foreground">{t('ai_intro')}</p>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                                                 {[
-                                                    { icon: Landmark, label: t('check_eligibility'), cmd: "1" },
-                                                    { icon: TrendingUp, label: t('improve_score'), cmd: "2" },
-                                                    { icon: FileText, label: t('document_checklist'), cmd: "3" },
-                                                    { icon: ShieldCheck, label: t('full_audit'), cmd: "4" }
+                                                    { icon: Bank, label: t('check_eligibility'), cmd: "Check my loan eligibility" },
+                                                    { icon: TrendUp, label: t('improve_score'), cmd: "How can I improve my credit score?" },
+                                                    { icon: FileText, label: t('document_checklist'), cmd: "What documents are needed for a loan?" },
+                                                    { icon: SealCheck, label: t('full_audit'), cmd: "Tell me about banking rules and regulations" }
                                                 ].map((opt) => (
                                                     <motion.button
                                                         key={opt.cmd}
@@ -788,7 +791,7 @@ export function SplitViewDashboard() {
                                 ) : msg.role === 'system' ? (
                                     <div className="flex flex-col gap-3">
                                         <div className="flex items-center gap-2 text-[#D46B4F] font-medium border-b border-dashed border-[#D46B4F]/30 pb-2">
-                                            <Sparkles className="h-4 w-4" />
+                                            <Sparkle className="h-4 w-4" />
                                             <span>{t('report_ready')}</span>
                                         </div>
                                         <p className="text-muted-foreground">{msg.content.replace(/\[Download PDF\]\(.*\)/, '')}</p>
@@ -797,7 +800,7 @@ export function SplitViewDashboard() {
                                                 onClick={() => window.open(reportUrl, '_blank')}
                                                 className="mt-1 bg-[#3D4F6F] hover:bg-[#2A3B52] text-white w-full flex items-center justify-center gap-2 h-10 rounded-xl"
                                             >
-                                                <BarChart3 className="h-4 w-4" />
+                                                <ChartBar className="h-4 w-4" />
                                                 {t('download_pdf')}
                                             </Button>
                                         )}
@@ -846,12 +849,12 @@ export function SplitViewDashboard() {
                     <div className="flex gap-3">
                         <Avatar className="h-8 w-8 mt-1 border border-[#E5E5E5] dark:border-[#404040] flex-shrink-0">
                             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white rounded-full">
-                                <Sparkles className="h-4 w-4" />
+                                <Sparkle className="h-4 w-4" />
                             </div>
                         </Avatar>
                         <div className="rounded-2xl rounded-tl-sm p-4 bg-white dark:bg-[#2B2A29] border border-[#E5E5E5] dark:border-[#30302E] shadow-sm">
                             <div className="flex items-center gap-2 text-[13px] text-[#6B7280] dark:text-[#9CA3AF]">
-                                <Loader2 className="h-4 w-4 animate-spin text-[#D46B4F]" />
+                                <CircleNotch className="h-4 w-4 animate-spin text-[#D46B4F]" />
                                 {getStatusMessage()}
                             </div>
                         </div>
@@ -1122,11 +1125,11 @@ export function SplitViewDashboard() {
                 <Tabs value={mobileTab} onValueChange={(v: string) => setMobileTab(v as "chat" | "dashboard")} className="h-full flex flex-col">
                     <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
                         <TabsTrigger value="chat" className="gap-2">
-                            <MessageSquare className="h-4 w-4" />
+                            <ChatCircle className="h-4 w-4" />
                             Chat
                         </TabsTrigger>
                         <TabsTrigger value="dashboard" className="gap-2">
-                            <BarChart3 className="h-4 w-4" />
+                            <ChartBar className="h-4 w-4" />
                             Dashboard
                             {auditData && (
                                 <span className="ml-1 h-2 w-2 rounded-full bg-green-500" />

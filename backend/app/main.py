@@ -864,31 +864,38 @@ async def voice_chat(
         keywords = [
             "rule", "regulation", "rbi", "bank", "law", "act", "guideline", "norm", "kyc", "repo", "interest", 
             "scam", "fraud", "fake", "fee", "charge", "upfront", "pay", "money",
-            "literacy", "safety", "borrower", "right", "duty", "ombudsman", "complaint", "grievance"
+            "literacy", "safety", "borrower", "right", "duty", "ombudsman", "complaint", "grievance",
+            "document", "checklist", "proof", "paperwork", "requirement", "pan", "aadhaar", "itr",
+            "score", "improve", "credit", "rating", "cibil", "report", "history"
         ]
         if "banking rules and regulations" in text_input.lower() or any(k in text_input.lower() for k in keywords):
             is_rag_query = True
     
     if is_rag_query and text_input:
         print(f"Fetching RAG context for: {text_input}")
-        rbi_context, sources = await retrieve_context(text_input)
-        
-        # Determine if verified badge should be shown (Only for RBI docs and Fraud lists)
-        verified_docs = [
-            "Reserve Bank of India.pdf",
-            "ALERTLIST-FRAUDCOMPANIES.PDF",
-            "RBI-FRAUD-RISK-MANAGEMENT-15-07-24.pdf",
-            "BANKI15122014.PDF",
-            "rbi_fraud_user_notice.PDF"
-        ]
-        is_rbi_verified = any(doc in s for s in sources for doc in verified_docs)
-        
-        if rbi_context:
-            citation_instruction = "2. Do NOT cite the specific filename (e.g., 'ALERTLIST-FRAUDCOMPANIES.PDF'). Instead, refer to it as 'RBI Alert List' or 'official guidelines'."
-            if not is_rbi_verified:
-                citation_instruction = "2. Do NOT mention the source name, filename, or 'According to...' in the response. Just give the answer directly."
-
-            rbi_context = f"\n\nRELEVANT DOCUMENTS (SOURCE: {', '.join(sources)}):\n{rbi_context}\n\nINSTRUCTIONS:\n1. Answer based ONLY on the above documents.\n{citation_instruction}\n3. DO NOT give generic advice like 'check online' or 'consult a professional' if the answer is in the document.\n4. If the answer is NOT in the document, state that clearly."
+        try:
+            rbi_context, sources = await retrieve_context(text_input)
+            
+            # Determine if verified badge should be shown (Only for RBI docs and Fraud lists)
+            verified_docs = [
+                "Reserve Bank of India.pdf",
+                "ALERTLIST-FRAUDCOMPANIES.PDF",
+                "RBI-FRAUD-RISK-MANAGEMENT-15-07-24.pdf",
+                "BANKI15122014.PDF",
+                "rbi_fraud_user_notice.PDF"
+            ]
+            is_rbi_verified = any(doc in s for s in sources for doc in verified_docs)
+            
+            if rbi_context:
+                citation_instruction = "2. Do NOT cite the specific filename (e.g., 'ALERTLIST-FRAUDCOMPANIES.PDF'). Instead, refer to it as 'RBI Alert List' or 'official guidelines'."
+                if not is_rbi_verified:
+                    citation_instruction = "2. Do NOT mention the source name, filename, or 'According to...' in the response. Just give the answer directly."
+    
+                rbi_context = f"\n\nRELEVANT DOCUMENTS (SOURCE: {', '.join(sources)}):\n{rbi_context}\n\nINSTRUCTIONS:\n1. Answer based ONLY on the above documents.\n{citation_instruction}\n3. DO NOT give generic advice like 'check online' or 'consult a professional' if the answer is in the document.\n4. If the answer is NOT in the document, state that clearly."
+        except Exception as e:
+            print(f"RAG Retrieval Error: {e}")
+            # Fallback to advisory mode without context, but DO NOT trigger data collection
+            rbi_context = ""
 
     # Only inject missing fields if NOT a RAG query, or if RAG query is empty
     fields_prompt = ""

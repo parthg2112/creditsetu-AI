@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkle } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -224,7 +224,7 @@ export function ManualInputForm({ onAnalyze, isLoading }: ManualInputFormProps) 
                         <>Analyzing...</>
                     ) : (
                         <>
-                            <Sparkles className="mr-2 h-4 w-4" />
+                            <Sparkle className="mr-2 h-4 w-4" />
                             Analyze Loan Readiness
                         </>
                     )}

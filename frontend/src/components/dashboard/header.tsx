@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, LayoutDashboard, Store, Languages } from "lucide-react";
+import { Bell, SignOut, SquaresFour, Storefront, Translate } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -47,12 +47,12 @@ export function Header() {
                                 <SelectTrigger className="w-[140px] h-9 gap-2 px-3 text-sm font-medium bg-transparent border-none hover:bg-muted/50 transition-colors focus:ring-0">
                                     {pathname.startsWith("/marketplace") ? (
                                         <div className="flex items-center gap-2">
-                                            <Store className="w-4 h-4" />
+                                            <Storefront className="w-4 h-4" />
                                             <span>Marketplace</span>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2">
-                                            <LayoutDashboard className="w-4 h-4" />
+                                            <SquaresFour className="w-4 h-4" />
                                             <span>Dashboard</span>
                                         </div>
                                     )}
@@ -60,13 +60,13 @@ export function Header() {
                                 <SelectContent align="start" className="min-w-[140px]">
                                     <SelectItem value="dashboard" className="cursor-pointer">
                                         <div className="flex items-center gap-2">
-                                            <LayoutDashboard className="w-4 h-4" />
+                                            <SquaresFour className="w-4 h-4" />
                                             <span>Dashboard</span>
                                         </div>
                                     </SelectItem>
                                     <SelectItem value="marketplace" className="cursor-pointer">
                                         <div className="flex items-center gap-2">
-                                            <Store className="w-4 h-4" />
+                                            <Storefront className="w-4 h-4" />
                                             <span>Marketplace</span>
                                         </div>
                                     </SelectItem>
@@ -104,7 +104,7 @@ export function Header() {
                     {/* Language Selector - Compact Design */}
                     <Select value={language} onValueChange={(val) => setLanguage(val as LanguageCode)}>
                         <SelectTrigger className="w-auto min-w-[70px] h-9 gap-2 px-3 text-sm font-medium bg-white dark:bg-[#2B2A29] border-[#E5E5E5] dark:border-[#404040] rounded-lg hover:bg-slate-50 dark:hover:bg-[#363635] transition-colors">
-                            <Languages className="w-4 h-4 text-slate-500" />
+                            <Translate className="w-4 h-4 text-slate-500" />
                             <span className="text-[13px] text-slate-700 dark:text-slate-300 uppercase tracking-wide">{language}</span>
                         </SelectTrigger>
                         <SelectContent align="end" className="min-w-[140px] rounded-lg">
@@ -142,7 +142,7 @@ export function Header() {
                                     className="h-8 w-8 text-[#6B7280] hover:text-red-500 dark:hover:text-red-400"
                                     onClick={() => signOut()}
                                 >
-                                    <LogOut className="h-4 w-4" />
+                                    <SignOut className="h-4 w-4" />
                                     <span className="sr-only">{t('log_out')}</span>
                                 </Button>
                             </>
