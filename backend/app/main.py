@@ -38,7 +38,7 @@ from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from app.utils.supabase_client import save_message, get_chat_history, get_latest_session
+from app.utils.supabase_client import save_message, get_chat_history, get_latest_session, delete_chat_history
 from app.rag import query_rbi_docs, retrieve_context
 
 # --- 1. CONFIGURATION & VALIDATION ---
@@ -115,7 +115,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS: Restrict to known origins
-allowed_origins = [origin.strip() for origin in settings.allowed_origins.split(",")]
+allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -648,6 +648,19 @@ FIELD_TO_KEY = {
 def health_check():
     """Health check endpoint"""
     return {"status": "active", "version": "2.0", "features": ["streaming", "rate-limiting"]}
+
+
+@app.post("/chat/clear/{session_id}")
+async def clear_chat(session_id: str):
+    """Clear session history"""
+    # Clear Supabase Persistence
+    delete_chat_history(session_id)
+    
+    # Clear Memory
+    if session_id in sessions._store:
+        sessions.clear(session_id)
+        
+    return {"status": "success", "message": "Session cleared"}
 
 
 @app.post("/chat/init")

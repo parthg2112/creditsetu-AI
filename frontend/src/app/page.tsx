@@ -132,22 +132,37 @@ export default async function Home() {
             <p className="mb-6 text-center text-sm font-medium text-muted-foreground">Supports MSMEs applying to major lenders</p>
             <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
               {/* Mock Logos */}
-              {['HDFC Bank', 'SBI', 'ICICI Bank', 'Bajaj Finserv', 'LendingKart'].map((brand) => (
-                <div key={brand} className="flex items-center gap-2 text-xl font-bold text-slate-400">
-                  <div className="h-6 w-6 rounded bg-current" />
-                  <span>{brand}</span>
-                </div>
-              ))}
+              <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                {[
+                  { name: 'HDFC Bank', src: '/bank/HDFCBank.jpg' },
+                  { name: 'SBI', src: '/bank/sbi.webp' },
+                  { name: 'ICICI Bank', src: '/bank/ICICIBank.jpg' },
+                  { name: 'Bajaj Finserv', src: '/bank/BAJAJFINSERV.jpg' },
+                  { name: 'LendingKart', src: '/bank/lendingkart.jpg' }
+                ].map((brand) => (
+                  <div key={brand.name} className="flex items-center gap-2 relative h-12 w-32">
+                    <img
+                      src={brand.src}
+                      alt={brand.name}
+                      className="object-contain w-full h-full mix-blend-multiply dark:mix-blend-normal"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section >
 
         {/* How it Works */}
-        < section id="how-it-works" className="py-24 bg-background" >
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
-            <div className="mx-auto max-w-2xl text-center mb-16">
-              <h2 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl text-slate-900">Your 3-Step Path to Capital</h2>
-              <p className="mt-4 text-lg text-muted-foreground">From chaos to clarity in three simple stages.</p>
+        <section id="how-it-works" className="py-24 bg-white relative overflow-hidden">
+          {/* Abstract Background Blob */}
+          <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-[#FDF4F0] rounded-full blur-3xl opacity-50" />
+          <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-[#F0F7F4] rounded-full blur-3xl opacity-50" />
+
+          <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+            <div className="mx-auto max-w-2xl text-center mb-16 space-y-4">
+              <h2 className="font-serif text-3xl font-bold tracking-tight sm:text-4xl text-[#2D1810]">Your 3-Step Path to Capital</h2>
+              <p className="text-lg text-[#5D4E49]">From chaos to clarity in three simple stages.</p>
             </div>
 
             <div className="grid gap-8 md:grid-cols-3">
@@ -156,33 +171,35 @@ export default async function Home() {
                   title: "1. Secure Ingestion",
                   desc: "Upload bank statements, ITR, and KYC into our bank-grade encrypted vault.",
                   icon: Upload,
-                  color: "text-orange-600",
-                  bg: "bg-orange-50"
+                  color: "text-[#D46B4F]",
+                  bg: "bg-[#FDF4F0]"
                 },
                 {
                   title: "2. AI Deep Audit (RAG)",
                   desc: "Our engine reads every line, flagging red flags like bounced checks or low DTI ratios.",
                   icon: Sparkles,
-                  color: "text-amber-600",
-                  bg: "bg-amber-50"
+                  color: "text-[#B08D55]", // Muted Gold
+                  bg: "bg-[#FFF9F0]"
                 },
                 {
                   title: "3. Actionable Roadmap",
                   desc: "Get a personalized step-by-step plan to improve your score before you apply.",
                   icon: CheckCircle2,
-                  color: "text-green-600",
-                  bg: "bg-green-50"
+                  color: "text-[#5A7D58]", // Sage Green
+                  bg: "bg-[#F0F7F4]"
                 }
               ].map((step, idx) => (
-                <Card key={idx} className="group relative overflow-hidden border-border/50 bg-white/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                  <CardContent className="p-8">
-                    <div className={`mb-6 inline-flex h-14 w-14 items-center justify-center rounded-2xl ${step.bg} ${step.color}`}>
-                      <step.icon className="h-7 w-7" />
+                <Card key={idx} className="group relative overflow-hidden border-none bg-[#FAFAF8] transition-all duration-500 hover:shadow-xl hover:shadow-[#D46B4F]/5 hover:-translate-y-2 rounded-[2rem]">
+                  <CardContent className="p-10 flex flex-col items-start gap-6">
+                    <div className={`inline-flex h-16 w-16 items-center justify-center rounded-[1.5rem] ${step.bg} ${step.color} transition-transform duration-500 group-hover:scale-110`}>
+                      <step.icon className="h-8 w-8" />
                     </div>
-                    <h3 className="mb-3 font-serif text-xl font-semibold text-slate-900">{step.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {step.desc}
-                    </p>
+                    <div className="space-y-3">
+                      <h3 className="font-serif text-2xl font-bold text-[#2D1810]">{step.title}</h3>
+                      <p className="text-[#5D4E49] leading-relaxed text-[15px]">
+                        {step.desc}
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -191,33 +208,33 @@ export default async function Home() {
         </section >
 
         {/* Feature Deep Dive */}
-        < section id="features" className="py-24 bg-slate-50/50" >
+        <section id="features" className="py-32 bg-[#FAFAF8]" >
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl space-y-32">
 
             {/* Feature 1 */}
-            <div className="grid gap-12 lg:grid-cols-2 items-center">
+            <div className="grid gap-16 lg:grid-cols-2 items-center">
               <div className="space-y-8">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
-                  <BarChart3 className="h-6 w-6" />
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FFF4E6] text-[#D97706]">
+                  <BarChart3 className="h-7 w-7" />
                 </div>
-                <h2 className="font-serif text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                <h2 className="font-serif text-4xl font-bold tracking-tight text-[#2D1810] sm:text-5xl">
                   The RAG Underwriter Engine.
                 </h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <p className="text-xl text-[#5D4E49] leading-relaxed">
                   Most rejections happen because of hidden patterns you miss. Our Retrieval-Augmented Generation (RAG) agent scans years of transaction history to identify "Cash Flow Gaps" and "Cheque Bounces" that ruin credibility.
                 </p>
-                <ul className="space-y-4">
+                <ul className="space-y-5">
                   {['Identifies 99% of rejection triggers', 'Analyzes banking psychology', 'Benchmarks against lender criteria'].map((item) => (
-                    <li key={item} className="flex items-center gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600">
-                        <CheckCircle2 className="h-4 w-4" />
+                    <li key={item} className="flex items-center gap-4 group">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F0F7F4] text-[#5A7D58] group-hover:bg-[#5A7D58] group-hover:text-white transition-colors duration-300">
+                        <CheckCircle2 className="h-5 w-5" />
                       </div>
-                      <span className="font-medium text-slate-700">{item}</span>
+                      <span className="font-medium text-[#4A3B36] text-lg">{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="relative rounded-2xl border border-border/50 bg-white shadow-2xl overflow-hidden">
+              <div className="relative rounded-[2.5rem] border border-[#E6DCD5] bg-white shadow-2xl shadow-[#D46B4F]/5 overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
                 <Image
                   src="/images/feature1.png"
                   alt="RAG Underwriter Dashboard"
@@ -229,8 +246,8 @@ export default async function Home() {
             </div>
 
             {/* Feature 2 */}
-            <div className="grid gap-12 lg:grid-cols-2 items-center lg:flex-row-reverse">
-              <div className="order-last lg:order-first relative rounded-2xl border border-border/50 bg-white shadow-2xl overflow-hidden">
+            <div className="grid gap-16 lg:grid-cols-2 items-center lg:flex-row-reverse">
+              <div className="order-last lg:order-first relative rounded-[2.5rem] border border-[#E6DCD5] bg-white shadow-2xl shadow-[#D46B4F]/5 overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
                 <Image
                   src="/images/feature2.png"
                   alt="Financial Co-Pilot Chat"
@@ -240,17 +257,17 @@ export default async function Home() {
                 />
               </div>
               <div className="space-y-8">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#D46B4F]/10 text-[#D46B4F]">
-                  <MessageCircle className="h-6 w-6" />
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FDF4F0] text-[#D46B4F]">
+                  <MessageCircle className="h-7 w-7" />
                 </div>
-                <h2 className="font-serif text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                <h2 className="font-serif text-4xl font-bold tracking-tight text-[#2D1810] sm:text-5xl">
                   Your AI Financial Co-Pilot.
                 </h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <p className="text-xl text-[#5D4E49] leading-relaxed">
                   Don't just see the problem, fix it. Our AI suggests specific actions—like "Lowering EMI burden" or "Consolidating debt"—to improve your creditworthiness score in real-time.
                 </p>
-                <Button variant="link" className="p-0 h-auto text-[#D46B4F] font-semibold text-lg hover:no-underline group">
-                  See how remediation works <ChevronRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <Button variant="link" className="p-0 h-auto text-[#D46B4F] font-bold text-lg hover:no-underline group items-center">
+                  See how remediation works <ChevronRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                 </Button>
               </div>
             </div>

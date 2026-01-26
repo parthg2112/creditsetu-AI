@@ -39,3 +39,11 @@ def get_latest_session(user_email: str):
     except Exception as e:
         print(f"Supabase Error (get_latest_session): {e}")
         return None
+
+def delete_chat_history(session_id: str):
+    try:
+        supabase.table("chats").delete().eq("session_id", session_id).execute()
+        return True
+    except Exception as e:
+        print(f"Supabase Error (delete_chat_history): {e}")
+        return False

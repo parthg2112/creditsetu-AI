@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, FormEvent, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3, Mic } from "lucide-react";
+import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3, Mic, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -613,6 +613,37 @@ export function SplitViewDashboard() {
         return t('waiting_for_input');
     };
 
+    const handleClearChat = useCallback(async () => {
+        if (!confirm("Are you sure you want to clear the chat history?")) return;
+
+        setIsLoading(true);
+        try {
+            if (sessionId) {
+                const backendUrl = process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL || "http://127.0.0.1:8000";
+                await fetch(`${backendUrl}/chat/clear/${sessionId}`, {
+                    method: 'POST'
+                });
+            }
+
+            // Reset local state
+            setMessages([{
+                id: `welcome-${Date.now()}`,
+                role: "assistant",
+                content: "Welcome to CreditSetu AI", // Trigger the special welcome UI
+                type: "quick-reply",
+                quickReplies: ["1", "2", "3", "4"]
+            }]);
+            setCreditParams(INITIAL_PARAMS);
+            setAuditData(null);
+            setStage("loan-amount");
+
+        } catch (error) {
+            console.error("Failed to clear chat:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [sessionId]);
+
     // Render the chat panel - memoized to prevent re-renders
     const chatPanel = useMemo(() => (
         <div className="flex flex-col h-full bg-[#FAFAF8] dark:bg-[#1F1E1D]">
@@ -629,6 +660,17 @@ export function SplitViewDashboard() {
                     <p className="text-xs font-medium text-muted-foreground">
                         {getStatusMessage()}
                     </p>
+                </div>
+                <div className="ml-auto">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={handleClearChat}
+                        title="Clear Chat"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                 </div>
             </div>
 
@@ -797,7 +839,7 @@ export function SplitViewDashboard() {
                 />
             </div>
         </div>
-    ), [messages, isLoading, stage, language, isRecording, startRecording, stopRecording, handleQuickReply, reportUrl, t, session]);
+    ), [messages, isLoading, stage, language, isRecording, startRecording, stopRecording, handleQuickReply, reportUrl, t, session, handleClearChat]);
 
 
     // Render the dashboard panel - memoized to prevent re-renders

@@ -146,7 +146,7 @@ export function ChatSidebar({ loanId = 1, healthScore }: ChatSidebarProps) {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
                         onClick={async () => {
                             try {
                                 setMessages([{

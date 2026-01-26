@@ -28,7 +28,17 @@ export function LoanCard({ loan, isSelected, onToggleSelect }: LoanCardProps) {
             {/* Header */}
             <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 text-2xl flex items-center justify-center">{loan.bankLogo}</div>
+                    <div className="w-12 h-12 flex items-center justify-center relative overflow-hidden rounded-md">
+                        {loan.bankLogo.startsWith('/') ? (
+                            <img
+                                src={loan.bankLogo}
+                                alt={loan.bankName}
+                                className="object-contain w-full h-full mix-blend-multiply dark:mix-blend-normal"
+                            />
+                        ) : (
+                            <span className="text-2xl">{loan.bankLogo}</span>
+                        )}
+                    </div>
                     <span className="font-medium text-foreground">{loan.bankName}</span>
                 </div>
             </div>
