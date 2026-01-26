@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { auth } from "@/auth";
 import { SampleReportButton } from "@/components/landing/sample-report-button";
 
+
 export default async function Home() {
   const session = await auth();
 
@@ -77,10 +78,10 @@ export default async function Home() {
           <div className="container relative mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
             <div className="grid gap-12 lg:grid-cols-2 lg:gap-8 items-center">
               <div className="flex flex-col justify-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary w-fit">
+                {/* <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary w-fit">
                   <Sparkles className="mr-2 h-3.5 w-3.5 fill-primary/20" />
                   Hackathon 2025 Finalist
-                </div>
+                </div> */}
                 <div className="space-y-4">
                   <h1 className="font-serif text-4xl font-bold tracking-tight text-[#1F1E1D] sm:text-5xl xl:text-6xl/none">
                     Stop getting rejected. <br />
@@ -110,11 +111,11 @@ export default async function Home() {
                   <p>Trusted by 200+ MSMEs to secure capital.</p>
                 </div> */}
               </div>
-              <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none animate-in fade-in zoom-in-95 duration-1000 delay-200">
+              <div className="relative mx-auto w-full max-w-[500px] lg:max-w-none h-[500px] animate-in fade-in zoom-in-95 duration-1000 delay-200">
                 <div className="relative aspect-square w-full sm:aspect-[4/3] lg:aspect-square">
                   <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-[#D46B4F]/10 to-transparent blur-2xl" />
                   <Image
-                    src="/images/hero.png"
+                    src="/Gemini_Generated_Image_2mnjwy2mnjwy2mnj.png"
                     alt="Loan Health Score Dashboard"
                     fill
                     className="object-contain drop-shadow-2xl transition-all duration-500 hover:scale-[1.02]"
@@ -171,27 +172,21 @@ export default async function Home() {
                   title: "1. Secure Ingestion",
                   desc: "Upload bank statements, ITR, and KYC into our bank-grade encrypted vault.",
                   icon: Upload,
-                  color: "text-[#D46B4F]",
-                  bg: "bg-[#FDF4F0]"
                 },
                 {
                   title: "2. AI Deep Audit (RAG)",
                   desc: "Our engine reads every line, flagging red flags like bounced checks or low DTI ratios.",
                   icon: Sparkles,
-                  color: "text-[#B08D55]", // Muted Gold
-                  bg: "bg-[#FFF9F0]"
                 },
                 {
                   title: "3. Actionable Roadmap",
                   desc: "Get a personalized step-by-step plan to improve your score before you apply.",
                   icon: CheckCircle2,
-                  color: "text-[#5A7D58]", // Sage Green
-                  bg: "bg-[#F0F7F4]"
                 }
               ].map((step, idx) => (
-                <Card key={idx} className="group relative overflow-hidden border-none bg-[#FAFAF8] transition-all duration-500 hover:shadow-xl hover:shadow-[#D46B4F]/5 hover:-translate-y-2 rounded-[2rem]">
+                <Card key={idx} className="group relative overflow-hidden border-none bg-[#FAFAF8] transition-all duration-500 ease-out hover:shadow-[0_20px_40px_-12px_rgba(212,107,79,0.1)] hover:-translate-y-2 hover:scale-[1.02] active:scale-[0.98] rounded-[2rem]">
                   <CardContent className="p-10 flex flex-col items-start gap-6">
-                    <div className={`inline-flex h-16 w-16 items-center justify-center rounded-[1.5rem] ${step.bg} ${step.color} transition-transform duration-500 group-hover:scale-110`}>
+                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-[#FDF4F0] text-[#D46B4F] transition-all duration-500 group-hover:scale-110 group-hover:bg-[#D46B4F] group-hover:text-white group-hover:rotate-6">
                       <step.icon className="h-8 w-8" />
                     </div>
                     <div className="space-y-3">
@@ -214,7 +209,7 @@ export default async function Home() {
             {/* Feature 1 */}
             <div className="grid gap-16 lg:grid-cols-2 items-center">
               <div className="space-y-8">
-                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FFF4E6] text-[#D97706]">
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FDF4F0] text-[#D46B4F] transition-transform duration-500 hover:rotate-12 hover:scale-110">
                   <BarChart3 className="h-7 w-7" />
                 </div>
                 <h2 className="font-serif text-4xl font-bold tracking-tight text-[#2D1810] sm:text-5xl">
@@ -226,17 +221,17 @@ export default async function Home() {
                 <ul className="space-y-5">
                   {['Identifies 99% of rejection triggers', 'Analyzes banking psychology', 'Benchmarks against lender criteria'].map((item) => (
                     <li key={item} className="flex items-center gap-4 group">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F0F7F4] text-[#5A7D58] group-hover:bg-[#5A7D58] group-hover:text-white transition-colors duration-300">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FDF4F0] text-[#D46B4F] group-hover:bg-[#D46B4F] group-hover:text-white transition-all duration-300 group-hover:scale-110">
                         <CheckCircle2 className="h-5 w-5" />
                       </div>
-                      <span className="font-medium text-[#4A3B36] text-lg">{item}</span>
+                      <span className="font-medium text-[#4A3B36] text-lg transition-colors group-hover:text-[#D46B4F]">{item}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="relative rounded-[2.5rem] border border-[#E6DCD5] bg-white shadow-2xl shadow-[#D46B4F]/5 overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+              <div className="relative rounded-[2.5rem] border border-[#E6DCD5] bg-white shadow-2xl shadow-[#D46B4F]/5 overflow-hidden transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_30px_60px_-12px_rgba(212,107,79,0.15)]">
                 <Image
-                  src="/images/feature1.png"
+                  src="/Gemini_Generated_Image_786skv786skv786s.png"
                   alt="RAG Underwriter Dashboard"
                   width={800}
                   height={600}
@@ -247,9 +242,9 @@ export default async function Home() {
 
             {/* Feature 2 */}
             <div className="grid gap-16 lg:grid-cols-2 items-center lg:flex-row-reverse">
-              <div className="order-last lg:order-first relative rounded-[2.5rem] border border-[#E6DCD5] bg-white shadow-2xl shadow-[#D46B4F]/5 overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+              <div className="order-last lg:order-first relative rounded-[2.5rem] border border-[#E6DCD5] bg-white shadow-2xl shadow-[#D46B4F]/5 overflow-hidden transition-all duration-700 hover:scale-[1.02] hover:shadow-[0_30px_60px_-12px_rgba(212,107,79,0.15)]">
                 <Image
-                  src="/images/feature2.png"
+                  src="/Gemini_Generated_Image_k5gfw5k5gfw5k5gf.png"
                   alt="Financial Co-Pilot Chat"
                   width={800}
                   height={600}
@@ -257,7 +252,7 @@ export default async function Home() {
                 />
               </div>
               <div className="space-y-8">
-                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FDF4F0] text-[#D46B4F]">
+                <div className="inline-flex h-14 w-14 items-center justify-center rounded-[1.2rem] bg-[#FDF4F0] text-[#D46B4F] transition-transform duration-500 hover:rotate-12 hover:scale-110">
                   <MessageCircle className="h-7 w-7" />
                 </div>
                 <h2 className="font-serif text-4xl font-bold tracking-tight text-[#2D1810] sm:text-5xl">
@@ -313,17 +308,17 @@ export default async function Home() {
                   <ShieldCheck className="h-6 w-6 text-[#D46B4F]" />
                   <span className="font-serif text-xl font-bold">CreditSetu AI</span>
                 </div>
-                <p className="text-[#A89894] max-w-xs mb-6">
+                <p className="text-[#CFC1BD] max-w-xs mb-6">
                   Empowering MSMEs with AI-driven insights for faster, fairer loan approvals.
                 </p>
                 <div className="flex gap-4">
-                  <Link href="#" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
+                  <Link href="#" aria-label="Twitter" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
                     <Twitter className="h-4 w-4" />
                   </Link>
-                  <Link href="#" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
+                  <Link href="#" aria-label="LinkedIn" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
                     <Linkedin className="h-4 w-4" />
                   </Link>
-                  <Link href="#" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
+                  <Link href="#" aria-label="Instagram" className="flex h-8 w-8 items-center justify-center rounded bg-[#3E241A] hover:bg-[#D46B4F] transition-colors text-white">
                     <Instagram className="h-4 w-4" />
                   </Link>
                 </div>
@@ -352,7 +347,7 @@ export default async function Home() {
                 </ul>
               </div>
             </div>
-            <div className="border-t border-[#3E241A] mt-12 pt-8 text-center text-sm text-[#8B736E]">
+            <div className="border-t border-[#3E241A] mt-12 pt-8 text-center text-sm text-[#CFC1BD]">
               © 2025 CreditSetu AI. All rights reserved.
             </div>
           </div>

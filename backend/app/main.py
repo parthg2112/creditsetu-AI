@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     gemini_api_key: Optional[str] = Field(default=None, alias="GEMINI_API_KEY")
     google_api_key: Optional[str] = Field(default=None, alias="GOOGLE_API_KEY")
     redis_url: Optional[str] = Field(default=None, alias="REDIS_URL")
-    allowed_origins: str = Field(default="http://localhost:3000,http://127.0.0.1:3000", alias="ALLOWED_ORIGINS")
+    allowed_origins: str = Field(default="http://localhost:3000,http://127.0.0.1:3000,http://localhost:8000,*", alias="ALLOWED_ORIGINS")
     
     # Additional env vars from your project
     supabase_url: Optional[str] = Field(default=None, alias="SUPABASE_URL")
@@ -101,7 +101,7 @@ async def lifespan(app: FastAPI):
     print("✅ Gemini AI configured")
     yield
     # Shutdown
-    print("👋 CreditSetu AI Backend shutting down...")
+    print(" CreditSetu AI Backend shutting down...")
 
 
 app = FastAPI(
@@ -697,7 +697,7 @@ def init_chat(request: Request, language: str = "en"):
     
     # Localized Greetings
     greetings = {
-        "en": """**Welcome to CreditSetu AI** 👋
+        "en": """**Welcome to CreditSetu AI** 
 
 I'm your AI loan consultant. Choose an option:
 
@@ -706,7 +706,7 @@ I'm your AI loan consultant. Choose an option:
 **3.** Document Checklist 📄
 **4.** Rules and Regulations 📜
 """,
-        "hi": """**क्रेडिटसेतु AI में आपका स्वागत है** 👋
+        "hi": """**क्रेडिटसेतु AI में आपका स्वागत है** 
 
 मैं आपका AI लोन सलाहकार हूँ। एक विकल्प चुनें:
 
@@ -715,7 +715,7 @@ I'm your AI loan consultant. Choose an option:
 **3.** दस्तावेज़ चेकलिस्ट 📄
 **4.** नियम और विनियम 📜
 """,
-        "hinglish": """**CreditSetu AI mein aapka swagat hai** 👋
+        "hinglish": """**CreditSetu AI mein aapka swagat hai** 
 
 Main aapka AI loan consultant hoon. Ek option chunein:
 
@@ -724,7 +724,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **3.** Document Checklist 📄
 **4.** Rules aur Regulations 📜
 """,
-        "te": """**క్రెడిట్‌సేతు AI కి స్వాగతం** 👋
+        "te": """**క్రెడిట్‌సేతు AI కి స్వాగతం** 
 
 నేను మీ AI లోన్ సలహాదారుడిని. ఒక ఎంపికను ఎంచుకోండి:
 
@@ -733,7 +733,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **3.** డాక్యుమెంట్ చెక్‌లిస్ట్ 📄
 **4.** నియమాలు మరియు నిబంధనలు 📜
 """,
-        "mr": """**क्रेडिटसेतु AI मध्ये आपले स्वागत आहे** 👋
+        "mr": """**क्रेडिटसेतु AI मध्ये आपले स्वागत आहे** 
 
 मी तुमचा AI कर्ज सल्लागार आहे. एक पर्याय निवडा:
 
@@ -742,7 +742,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **3.** कागदपत्र चेकलिस्ट 📄
 **4.** नियम आणि कायदे 📜
 """,
-        "ta": """**கிரெடிட்சேது AI க்கு வரவேற்கிறோம்** 👋
+        "ta": """**கிரெடிட்சேது AI க்கு வரவேற்கிறோம்** 
 
 நான் உங்கள் AI கடன் ஆலோசகன். ஒரு விருப்பத்தைத் தேர்வு செய்யவும்:
 
@@ -751,7 +751,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **3.** ஆவண சரிபார்ப்புப் பட்டியல் 📄
 **4.** விதிகள் மற்றும் ஒழுங்குமுறைகள் 📜
 """,
-        "kn": """**ಕ್ರೆಡಿಟ್‍ಸೇತು AI ಗೆ ಸ್ವಾಗತ** 👋
+        "kn": """**ಕ್ರೆಡಿಟ್‍ಸೇತು AI ಗೆ ಸ್ವಾಗತ** 
 
 ನಾನು ನಿಮ್ಮ AI ಸಾಲ ಸಲಹೆಗಾರ. ಒಂದು ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿ:
 
@@ -760,7 +760,7 @@ Main aapka AI loan consultant hoon. Ek option chunein:
 **3.** ದಾಖಲೆ ಪರಿಶೀಲನಾ ಪಟ್ಟಿ 📄
 **4.** ನಿಯಮಗಳು ಮತ್ತು ನಿಬಂಧನೆಗಳು 📜
 """,
-        "bn": """**ক্রেডিটসেতু AI তে স্বাগতম** 👋
+        "bn": """**ক্রেডিটসেতু AI তে স্বাগতম** 
 
 আমি আপনার AI লোন উপদেষ্টা। একটি বিকল্প বেছে নিন:
 

@@ -68,7 +68,17 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                     <div className="font-semibold text-muted-foreground self-center"></div>
                                     {loans.map((loan) => (
                                         <div key={loan.id} className="flex flex-col items-center gap-3 p-4 bg-card rounded-lg border border-border shadow-sm">
-                                            <div className="text-4xl">{loan.bankLogo}</div>
+                                            <div className="w-16 h-16 flex items-center justify-center relative overflow-hidden rounded-md">
+                                                {loan.bankLogo.startsWith('/') ? (
+                                                    <img
+                                                        src={loan.bankLogo}
+                                                        alt={loan.bankName}
+                                                        className="object-contain w-full h-full mix-blend-multiply dark:mix-blend-normal"
+                                                    />
+                                                ) : (
+                                                    <span className="text-4xl">{loan.bankLogo}</span>
+                                                )}
+                                            </div>
                                             <div className="font-semibold text-center text-foreground">{loan.bankName}</div>
                                         </div>
                                     ))}
@@ -157,15 +167,7 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                         </div>
                                     ))}
 
-                                    {/* Apply Buttons */}
-                                    <div className="self-center"></div>
-                                    {loans.map((loan) => (
-                                        <div key={loan.id} className="p-4">
-                                            <button className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-md">
-                                                {t('apply_now')}
-                                            </button>
-                                        </div>
-                                    ))}
+
                                 </div>
                             </div>
                         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, LogOut, LayoutDashboard, Store } from "lucide-react";
+import { Bell, LogOut, LayoutDashboard, Store, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -45,7 +45,17 @@ export function Header() {
                                 onValueChange={(val) => router.push(val === "marketplace" ? "/marketplace" : "/dashboard")}
                             >
                                 <SelectTrigger className="w-[140px] h-9 gap-2 px-3 text-sm font-medium bg-transparent border-none hover:bg-muted/50 transition-colors focus:ring-0">
-                                    <SelectValue />
+                                    {pathname.startsWith("/marketplace") ? (
+                                        <div className="flex items-center gap-2">
+                                            <Store className="w-4 h-4" />
+                                            <span>Marketplace</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2">
+                                            <LayoutDashboard className="w-4 h-4" />
+                                            <span>Dashboard</span>
+                                        </div>
+                                    )}
                                 </SelectTrigger>
                                 <SelectContent align="start" className="min-w-[140px]">
                                     <SelectItem value="dashboard" className="cursor-pointer">
@@ -93,21 +103,18 @@ export function Header() {
                 <div className="flex items-center gap-2">
                     {/* Language Selector - Compact Design */}
                     <Select value={language} onValueChange={(val) => setLanguage(val as LanguageCode)}>
-                        <SelectTrigger className="w-auto min-w-[70px] h-9 gap-1.5 px-3 text-sm font-medium bg-white dark:bg-[#2B2A29] border-[#E5E5E5] dark:border-[#404040] rounded-lg hover:bg-slate-50 dark:hover:bg-[#363635] transition-colors">
-                            <span className="text-base leading-none">{LANGUAGES.find(l => l.code === language)?.flag}</span>
+                        <SelectTrigger className="w-auto min-w-[70px] h-9 gap-2 px-3 text-sm font-medium bg-white dark:bg-[#2B2A29] border-[#E5E5E5] dark:border-[#404040] rounded-lg hover:bg-slate-50 dark:hover:bg-[#363635] transition-colors">
+                            <Languages className="w-4 h-4 text-slate-500" />
                             <span className="text-[13px] text-slate-700 dark:text-slate-300 uppercase tracking-wide">{language}</span>
                         </SelectTrigger>
-                        <SelectContent align="end" className="min-w-[160px] rounded-lg">
+                        <SelectContent align="end" className="min-w-[140px] rounded-lg">
                             {LANGUAGES.map((lang) => (
                                 <SelectItem
                                     key={lang.code}
                                     value={lang.code}
                                     className="text-sm cursor-pointer rounded-md"
                                 >
-                                    <div className="flex items-center gap-2.5">
-                                        <span className="text-base">{lang.flag}</span>
-                                        <span>{lang.label}</span>
-                                    </div>
+                                    <span className="text-sm pl-1">{lang.label}</span>
                                 </SelectItem>
                             ))}
                         </SelectContent>

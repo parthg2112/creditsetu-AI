@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, FormEvent, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3, Mic, Trash2 } from "lucide-react";
+import { Send, Bot, Loader2, Sparkles, MessageSquare, BarChart3, Mic, Trash2, Landmark, TrendingUp, FileText, ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -15,6 +15,15 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/contexts/language-context";
 import { ClaudeChatInput } from "@/components/ui/claude-style-chat-input";
 import { useSession } from "next-auth/react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Chat message type
 interface Message {
@@ -97,6 +106,7 @@ export function SplitViewDashboard() {
     const [isRecording, setIsRecording] = useState(false);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [isClearDialogOpen, setIsClearDialogOpen] = useState(false);
 
     // Resizable panel state
     const [leftPanelWidth, setLeftPanelWidth] = useState(35); // percentage
@@ -614,8 +624,6 @@ export function SplitViewDashboard() {
     };
 
     const handleClearChat = useCallback(async () => {
-        if (!confirm("Are you sure you want to clear the chat history?")) return;
-
         setIsLoading(true);
         try {
             if (sessionId) {
@@ -651,7 +659,7 @@ export function SplitViewDashboard() {
             <div className="flex items-center gap-3 p-4 border-b border-[#E5E5E5] dark:border-[#30302E] bg-white dark:bg-[#2B2A29]">
                 <div className="relative">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white shadow-sm">
-                        <Sparkles className="h-4 w-4" />
+                        <Star className="h-5 w-5 fill-current" />
                     </div>
                     <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white dark:border-[#2B2A29] ${isLoading ? 'bg-amber-500 animate-pulse' : 'bg-green-500'}`} />
                 </div>
@@ -662,15 +670,45 @@ export function SplitViewDashboard() {
                     </p>
                 </div>
                 <div className="ml-auto">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={handleClearChat}
-                        title="Clear Chat"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <Dialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
+                        <DialogTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-[#D46B4F] hover:text-[#C45A3E] hover:bg-[#FDF4F0]"
+                                title="Clear Chat"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle>Clear Chat History?</DialogTitle>
+                                <DialogDescription>
+                                    This will remove all messages from the current session. This action cannot be undone.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter className="flex gap-2 sm:justify-end">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setIsClearDialogOpen(false)}
+                                    className="border-[#E5E5E5] text-slate-700 hover:bg-slate-50"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    variant="destructive"
+                                    onClick={() => {
+                                        handleClearChat();
+                                        setIsClearDialogOpen(false);
+                                    }}
+                                    className="bg-[#D46B4F] hover:bg-[#C45A3E] text-white"
+                                >
+                                    Confirm Clear
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
@@ -692,7 +730,7 @@ export function SplitViewDashboard() {
                         )}>
                             {msg.role === 'assistant' ? (
                                 <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#D46B4F] to-[#C45A3E] text-white rounded-full">
-                                    <Sparkles className="h-4 w-4" />
+                                    <Star className="h-4 w-4 fill-current" />
                                 </div>
                             ) : (
                                 <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -716,24 +754,29 @@ export function SplitViewDashboard() {
                                         <div className="flex flex-col gap-4">
                                             <div className="flex items-center gap-2">
                                                 <span className="text-lg font-semibold text-[#1F1E1D] dark:text-[#ECECEC]">{t('welcome_message')}</span>
-                                                <span className="text-xl">👋</span>
+
                                             </div>
                                             <p className="text-muted-foreground">{t('ai_intro')}</p>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                                                 {[
-                                                    { icon: "🏦", label: t('check_eligibility'), cmd: "1" },
-                                                    { icon: "📈", label: t('improve_score'), cmd: "2" },
-                                                    { icon: "📄", label: t('document_checklist'), cmd: "3" },
-                                                    { icon: "✅", label: t('full_audit'), cmd: "4" }
+                                                    { icon: Landmark, label: t('check_eligibility'), cmd: "1" },
+                                                    { icon: TrendingUp, label: t('improve_score'), cmd: "2" },
+                                                    { icon: FileText, label: t('document_checklist'), cmd: "3" },
+                                                    { icon: ShieldCheck, label: t('full_audit'), cmd: "4" }
                                                 ].map((opt) => (
-                                                    <button
+                                                    <motion.button
                                                         key={opt.cmd}
                                                         onClick={() => handleSendMessage(opt.cmd)}
-                                                        className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#30302E] border border-[#E5E5E5] dark:border-[#404040] hover:border-[#D46B4F] hover:shadow-sm transition-all text-left group"
+                                                        whileHover={{ scale: 1.03, y: -2, backgroundColor: "#FFF9F5" }}
+                                                        whileTap={{ scale: 0.97 }}
+                                                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                                                        className="flex items-center gap-3 p-3 rounded-xl bg-white dark:bg-[#30302E] border border-[#E5E5E5] dark:border-[#404040] hover:border-[#D46B4F]/30 transition-colors text-left group shadow-sm hover:shadow-md"
                                                     >
-                                                        <span className="text-xl group-hover:scale-110 transition-transform">{opt.icon}</span>
-                                                        <span className="text-sm font-medium text-[#1F1E1D] dark:text-[#ECECEC]">{opt.label}</span>
-                                                    </button>
+                                                        <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-[#FDF4F0] dark:bg-[#3E241A] text-[#D46B4F] group-hover:bg-[#FFEDD5] transition-colors">
+                                                            <opt.icon className="h-5 w-5" />
+                                                        </div>
+                                                        <span className="text-sm font-medium text-[#1F1E1D] dark:text-[#ECECEC] group-hover:text-[#D46B4F] transition-colors">{opt.label}</span>
+                                                    </motion.button>
                                                 ))}
                                             </div>
                                         </div>
