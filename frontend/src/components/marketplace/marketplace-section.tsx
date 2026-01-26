@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Loan } from "@/types/loan";
 import { LoanCard } from "./loan-card";
 import { useRef, useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface MarketplaceSectionProps {
     title: string;
@@ -13,6 +14,7 @@ interface MarketplaceSectionProps {
 }
 
 export function MarketplaceSection({ title, loans, selectedLoans, onToggleSelect }: MarketplaceSectionProps) {
+    const { t } = useLanguage();
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(true);
@@ -54,7 +56,7 @@ export function MarketplaceSection({ title, loans, selectedLoans, onToggleSelect
             <div className="flex items-center justify-between mb-4 px-1">
                 <h2 className="text-xl font-serif font-bold text-foreground">{title}</h2>
                 <button className="text-sm text-primary hover:underline font-medium">
-                    View All
+                    {t('view_all')}
                 </button>
             </div>
 

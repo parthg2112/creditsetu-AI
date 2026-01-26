@@ -2,6 +2,7 @@
 
 import { Loan } from "@/types/loan";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/contexts/language-context";
 
 interface LoanCardProps {
     loan: Loan;
@@ -10,6 +11,8 @@ interface LoanCardProps {
 }
 
 export function LoanCard({ loan, isSelected, onToggleSelect }: LoanCardProps) {
+    const { t } = useLanguage();
+
     return (
         <motion.div
             whileHover={{ y: -8, boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)" }}
@@ -23,7 +26,7 @@ export function LoanCard({ loan, isSelected, onToggleSelect }: LoanCardProps) {
             }}
         >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center justify-between p-4">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 text-2xl flex items-center justify-center">{loan.bankLogo}</div>
                     <span className="font-medium text-foreground">{loan.bankName}</span>
@@ -34,13 +37,11 @@ export function LoanCard({ loan, isSelected, onToggleSelect }: LoanCardProps) {
             <div className="p-4 flex flex-col items-center justify-center space-y-3">
                 <div className="text-center">
                     <div className="text-4xl font-bold text-primary">{loan.interestRate}%</div>
-                    <div className="text-sm text-muted-foreground">p.a. onwards</div>
+                    <div className="text-sm text-muted-foreground">{t('pa_onwards')}</div>
                 </div>
 
-                <div className="w-full h-px bg-border"></div>
-
                 <div className="text-center">
-                    <div className="text-sm text-muted-foreground">Max Amount</div>
+                    <div className="text-sm text-muted-foreground">{t('max_amount')}</div>
                     <div className="text-xl font-semibold text-foreground">{loan.maxAmount}</div>
                 </div>
             </div>
@@ -73,12 +74,14 @@ export function LoanCard({ loan, isSelected, onToggleSelect }: LoanCardProps) {
                         onChange={onToggleSelect}
                         className="w-4 h-4 rounded border-input text-primary focus:ring-primary cursor-pointer"
                     />
-                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Compare</span>
+                    <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{t('compare')}</span>
                 </label>
 
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
-                    Apply Now
-                </button>
+                {!isSelected && (
+                    <button className="px-4 py-2 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm">
+                        {t('apply_now')}
+                    </button>
+                )}
             </div>
         </motion.div>
     );

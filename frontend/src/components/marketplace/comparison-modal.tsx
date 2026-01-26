@@ -3,6 +3,7 @@
 import { X, Check } from "lucide-react";
 import { Loan } from "@/types/loan";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/contexts/language-context";
 
 interface ComparisonModalProps {
     isOpen: boolean;
@@ -11,6 +12,8 @@ interface ComparisonModalProps {
 }
 
 export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps) {
+    const { t } = useLanguage();
+
     // Safety check for empty loans array
     if (loans.length === 0) {
         return null;
@@ -49,7 +52,7 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                         <div className="bg-background rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto border border-border">
                             {/* Header */}
                             <div className="flex items-center justify-between p-6 border-b border-border bg-card">
-                                <h2 className="text-2xl font-serif font-bold text-foreground">Compare Loans</h2>
+                                <h2 className="text-2xl font-serif font-bold text-foreground">{t('page_title')}</h2>
                                 <button
                                     onClick={onClose}
                                     className="p-2 hover:bg-muted rounded-full transition-colors text-muted-foreground hover:text-foreground"
@@ -71,7 +74,7 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                     ))}
 
                                     {/* Interest Rate */}
-                                    <div className="font-semibold text-muted-foreground self-center">Interest Rate</div>
+                                    <div className="font-semibold text-muted-foreground self-center">{t('interest_rate')}</div>
                                     {loans.map((loan) => (
                                         <div
                                             key={loan.id}
@@ -81,18 +84,18 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                                 }`}
                                         >
                                             <div className="text-2xl font-bold text-primary">{loan.interestRate}%</div>
-                                            <div className="text-sm text-muted-foreground">p.a. onwards</div>
+                                            <div className="text-sm text-muted-foreground">{t('pa_onwards')}</div>
                                             {loan.interestRate === lowestRate && (
                                                 <div className="mt-2 flex items-center justify-center gap-1 text-primary text-sm font-medium">
                                                     <Check className="w-4 h-4" />
-                                                    Lowest Rate
+                                                    {t('lowest_rate')}
                                                 </div>
                                             )}
                                         </div>
                                     ))}
 
                                     {/* Max Amount */}
-                                    <div className="font-semibold text-muted-foreground self-center">Max Amount</div>
+                                    <div className="font-semibold text-muted-foreground self-center">{t('max_amount')}</div>
                                     {loans.map((loan) => (
                                         <div key={loan.id} className="p-4 bg-card border border-border rounded-lg text-center">
                                             <div className="text-xl font-semibold text-foreground">{loan.maxAmount}</div>
@@ -100,7 +103,7 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                     ))}
 
                                     {/* Processing Fee */}
-                                    <div className="font-semibold text-muted-foreground self-center">Processing Fee</div>
+                                    <div className="font-semibold text-muted-foreground self-center">{t('processing_fee')}</div>
                                     {loans.map((loan) => (
                                         <div
                                             key={loan.id}
@@ -113,14 +116,14 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                             {hasZeroFee && (loan.processingFee.toLowerCase().includes("zero") || loan.processingFee.toLowerCase().includes("nil")) && (
                                                 <div className="mt-2 flex items-center justify-center gap-1 text-primary text-sm font-medium">
                                                     <Check className="w-4 h-4" />
-                                                    Best Deal
+                                                    {t('best_deal')}
                                                 </div>
                                             )}
                                         </div>
                                     ))}
 
                                     {/* Prepayment Charges */}
-                                    <div className="font-semibold text-muted-foreground self-center">Prepayment Charges</div>
+                                    <div className="font-semibold text-muted-foreground self-center">{t('prepayment_charges')}</div>
                                     {loans.map((loan) => (
                                         <div
                                             key={loan.id}
@@ -133,14 +136,14 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                             {(loan.prepaymentCharges.toLowerCase().includes("zero") || loan.prepaymentCharges.toLowerCase().includes("nil")) && (
                                                 <div className="mt-2 flex items-center justify-center gap-1 text-primary text-sm font-medium">
                                                     <Check className="w-4 h-4" />
-                                                    No Charges
+                                                    {t('no_charges')}
                                                 </div>
                                             )}
                                         </div>
                                     ))}
 
                                     {/* Features */}
-                                    <div className="font-semibold text-muted-foreground self-start pt-4">Key Features</div>
+                                    <div className="font-semibold text-muted-foreground self-start pt-4">{t('key_features')}</div>
                                     {loans.map((loan) => (
                                         <div key={loan.id} className="p-4 bg-card border border-border rounded-lg">
                                             <ul className="space-y-2">
@@ -159,7 +162,7 @@ export function ComparisonModal({ isOpen, onClose, loans }: ComparisonModalProps
                                     {loans.map((loan) => (
                                         <div key={loan.id} className="p-4">
                                             <button className="w-full py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors shadow-md">
-                                                Apply Now
+                                                {t('apply_now')}
                                             </button>
                                         </div>
                                     ))}

@@ -372,7 +372,8 @@ def generate_pdf_sync(session_id: str, audit_data: Dict[str, Any]) -> str:
     pdf.set_font("Arial", 'B', 12)
     pdf.cell(0, 10, txt=f"Decision: {audit_data['decision']}", ln=1)
     pdf.set_font("Arial", '', 11)
-    pdf.multi_cell(0, 7, txt=f"Reasoning: {audit_data['reason']}")
+    safe_reason = f"Reasoning: {audit_data['reason']}".encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(190, 7, txt=safe_reason)
     pdf.ln(5)
     
     # Factor Analysis
@@ -401,7 +402,9 @@ def generate_pdf_sync(session_id: str, audit_data: Dict[str, Any]) -> str:
         pdf.set_font("Arial", '', 11)
         pdf.set_text_color(200, 50, 50)
         for flag in audit_data["red_flags"]:
-            pdf.multi_cell(0, 7, txt=f"- {flag}")
+            # Ensure text is safe and use explicit width
+            safe_text = f"- {flag}".encode('latin-1', 'replace').decode('latin-1')
+            pdf.multi_cell(190, 7, txt=safe_text)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(5)
     
@@ -414,7 +417,8 @@ def generate_pdf_sync(session_id: str, audit_data: Dict[str, Any]) -> str:
         pdf.set_font("Arial", '', 11)
         pdf.set_text_color(50, 150, 50)
         for s in audit_data["strengths"]:
-            pdf.multi_cell(0, 7, txt=f"- {s}")
+            safe_text = f"- {s}".encode('latin-1', 'replace').decode('latin-1')
+            pdf.multi_cell(190, 7, txt=safe_text)
         pdf.set_text_color(0, 0, 0)
         pdf.ln(5)
     
@@ -425,7 +429,8 @@ def generate_pdf_sync(session_id: str, audit_data: Dict[str, Any]) -> str:
     pdf.ln(2)
     pdf.set_font("Arial", '', 11)
     for p in audit_data["plan"]:
-        pdf.multi_cell(0, 7, txt=f"- {p}")
+        safe_text = f"- {p}".encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(190, 7, txt=safe_text)
     
     # Footer
     pdf.set_y(-30)
@@ -478,13 +483,20 @@ You are Creditsetu, an expert Indian AI Loan Consultant.
 1. **STRICT EXTRACTION:** ONLY extract the variable corresponding to the `JSON KEY TO USE`. Do NOT extract values for other fields unless explicitly stated by the user.
 2. **VALIDATION & CONVERSION:**
    - For `annual_income`, `monthly_debt`, `loan_amount`: Extract the numeric value in Rupees.
-   - **HANDLE INDIAN FORMATS:**
-     - "1 Lakh" or "1L" -> 100000
-     - "1 Crore", "1 Cr", "1cr" -> 10000000
-     - "50k" -> 50000
+   - **INTELLIGENT NORMALIZATION:**
+     - Detect and convert ALL variations of Indian numbering (Lakh, Lac, L, Crore, Cr, k, etc.) into plain integers.
+     - Example: "1.5L" -> 150000, "10 Lacs" -> 1000000.
+     - Remove all currency symbols (₹, INR, Rs) and commas.
    - **HANDLE RANGES:** If user gives a range (e.g., "10-12 Lakhs", "100-500 cr"), calculate and use the **AVERAGE**.
    - If input is ambiguous, ask for clarification.
 3. **NO HALLUCINATIONS:** Never assume a value (especially bankruptcy/defaults) from an unrelated answer.
+4. **IMMEDIATE FOLLOW-UP (FLOW CONTROL):**
+   - If the user provides the answer for `CURRENT QUESTION`:
+     1. Extract the value into `extracted_updates`.
+     2. Acknowledge briefly (e.g., "Got it.", "Noted.").
+     3. **IMMEDIATELY ASK THE NEXT FIELD** from the `FIELDS NEEDED` list.
+     - *Example:* If user answers "Annual Income" and the list has `['Annual Income', 'Monthly Debt', ...]`, you MUST ask about "Monthly Debt" in the same response.
+   - Do NOT stop at acknowledgment. Keep the audit moving.
 
 **MANDATORY VARIABLES:**
 1. `loan_amount` - Loan Amount (Rupees)
@@ -500,7 +512,7 @@ You are Creditsetu, an expert Indian AI Loan Consultant.
 
 **OUTPUT FORMAT (Always JSON, no markdown):**
 {
-  "response_text": "Your response...",
+  "response_text": "Your brief acknowledgment + NEXT QUESTION...",
   "user_transcription": "Verbatim transcription of the user's audio input (if audio provided)",
   "extracted_updates": {"field_name": value},
   "is_ready": false
@@ -799,7 +811,13 @@ USER MESSAGE:
     
     # Update session
     if llm_data.get("extracted_updates"):
-        session = sessions.update_from_dict(session_id, llm_data["extracted_updates"])
+        try:
+            print(f"DEBUG: Applying updates: {llm_data['extracted_updates']}")
+            session = sessions.update_from_dict(session_id, llm_data["extracted_updates"])
+        except Exception as e:
+            print(f"ERROR: Session update failed: {e}")
+            # Optional: Add error feedback to response_text so user knows something went wrong
+            # resp_text += " (Internal Error: Could not save data)"
     
     # Check completion
     remaining = get_missing_fields(session)

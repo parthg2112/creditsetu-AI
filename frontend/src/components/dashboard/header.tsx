@@ -63,14 +63,6 @@ export function Header() {
                                 </SelectContent>
                             </Select>
                         </BreadcrumbItem>
-                        <BreadcrumbSeparator />
-                        <BreadcrumbItem>
-                            {isDashboardRoot ? (
-                                <BreadcrumbPage>Overview</BreadcrumbPage>
-                            ) : (
-                                <BreadcrumbLink href="/dashboard" className="transition-colors hover:text-foreground">Dashboard</BreadcrumbLink>
-                            )}
-                        </BreadcrumbItem>
                         {!isDashboardRoot && segments.slice(1).map((segment, index) => {
                             const isLast = index === segments.slice(1).length - 1;
                             const href = `/dashboard/${segments.slice(1, index + 2).join('/')}`;

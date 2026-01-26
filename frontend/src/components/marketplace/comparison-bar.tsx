@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "@/contexts/language-context";
 
 interface ComparisonBarProps {
     selectedCount: number;
@@ -10,6 +11,8 @@ interface ComparisonBarProps {
 }
 
 export function ComparisonBar({ selectedCount, onCompare, onClear }: ComparisonBarProps) {
+    const { t } = useLanguage();
+
     return (
         <AnimatePresence>
             {selectedCount > 0 && (
@@ -29,7 +32,7 @@ export function ComparisonBar({ selectedCount, onCompare, onClear }: ComparisonB
                             disabled={selectedCount < 2}
                             className="px-6 py-2 bg-background text-foreground rounded-full font-medium hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Compare Now
+                            {t('compare_now')}
                         </button>
 
                         <button

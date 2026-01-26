@@ -88,7 +88,24 @@ const TRANSLATIONS = {
         submit: "Submit",
         loading: "Loading...",
         error: "Something went wrong",
-        try_again: "Please try again"
+        try_again: "Please try again",
+
+        // Marketplace
+        page_title: "Loan Marketplace",
+        page_subtitle: "Compare and apply for the best loan offers tailored for your needs.",
+        view_all: "View All",
+        pa_onwards: "p.a. onwards",
+        max_amount: "Max Amount",
+        compare: "Compare",
+        apply_now: "Apply Now",
+        compare_now: "Compare Now",
+        interest_rate: "Interest Rate",
+        processing_fee: "Processing Fee",
+        prepayment_charges: "Prepayment Charges",
+        key_features: "Key Features",
+        lowest_rate: "Lowest Rate",
+        best_deal: "Best Deal",
+        no_charges: "No Charges"
     },
     hi: {
         home: "होम",
@@ -138,7 +155,24 @@ const TRANSLATIONS = {
         submit: "जमा करें",
         loading: "लोड हो रहा है...",
         error: "कुछ गलत हो गया",
-        try_again: "कृपया पुनः प्रयास करें"
+        try_again: "कृपया पुनः प्रयास करें",
+
+        // Marketplace
+        page_title: "लोन मार्केटप्लेस",
+        page_subtitle: "अपनी आवश्यकताओं के अनुसार सर्वोत्तम लोन ऑफर्स की तुलना करें और आवेदन करें।",
+        view_all: "सभी देखें",
+        pa_onwards: "प्रति वर्ष से",
+        max_amount: "अधिकतम राशि",
+        compare: "तुलना करें",
+        apply_now: "अभी आवेदन करें",
+        compare_now: "अभी तुलना करें",
+        interest_rate: "ब्याज दर",
+        processing_fee: "प्रोसेसिंग शुल्क",
+        prepayment_charges: "प्रीपेमेंट शुल्क",
+        key_features: "मुख्य विशेषताएं",
+        lowest_rate: "सबसे कम दर",
+        best_deal: "सर्वोत्तम डील",
+        no_charges: "कोई शुल्क नहीं"
     },
     te: {
         home: "హోమ్",
@@ -188,7 +222,24 @@ const TRANSLATIONS = {
         submit: "సమర్పించండి",
         loading: "లోడ్ అవుతోంది...",
         error: "ఏదో తప్పు జరిగింది",
-        try_again: "దయచేసి మళ్లీ ప్రయత్నించండి"
+        try_again: "దయచేసి మళ్లీ ప్రయత్నించండి",
+
+        // Marketplace
+        page_title: "లోన్ మార్కెట్‌ప్లేస్",
+        page_subtitle: "మీ అవసరాలకు అనుగుణంగా ఉత్తమ రుణ ఆఫర్‌లను సరిపోల్చండి మరియు దరఖాస్తు చేయండి.",
+        view_all: "అన్నీ చూడండి",
+        pa_onwards: "సంవత్సరానికి పైగా",
+        max_amount: "గరిష్ట మొత్తం",
+        compare: "సరిపోల్చండి",
+        apply_now: "ఇప్పుడే దరఖాస్తు చేయండి",
+        compare_now: "ఇప్పుడే సరిపోల్చండి",
+        interest_rate: "వడ్డీ రేటు",
+        processing_fee: "ప్రాసెసింగ్ ఫీజు",
+        prepayment_charges: "ముందస్తు చెల్లింపు ఛార్జీలు",
+        key_features: "ముఖ్య లక్షణాలు",
+        lowest_rate: "అత్యల్ప రేటు",
+        best_deal: "ఉత్తమ డీల్",
+        no_charges: "ఛార్జీలు లేవు"
     },
     mr: {
         home: "होम",
@@ -238,7 +289,24 @@ const TRANSLATIONS = {
         submit: "सबमिट करा",
         loading: "लोड होत आहे...",
         error: "काही चूक झाली",
-        try_again: "कृपया पुन्हा प्रयत्न करा"
+        try_again: "कृपया पुन्हा प्रयत्न करा",
+
+        // Marketplace
+        page_title: "कर्ज मार्केटप्लेस",
+        page_subtitle: "तुमच्या गरजांनुसार सर्वोत्तम कर्ज ऑफर्सची तुलना करा आणि अर्ज करा.",
+        view_all: "सर्व पहा",
+        pa_onwards: "दरवर्षी पुढे",
+        max_amount: "जास्तीत जास्त रक्कम",
+        compare: "तुलना करा",
+        apply_now: "आत्ताच अर्ज करा",
+        compare_now: "आता तुलना करा",
+        interest_rate: "व्याज दर",
+        processing_fee: "प्रोसेसिंग फी",
+        prepayment_charges: "पूर्वफेड शुल्क",
+        key_features: "मुख्य वैशिष्ट्ये",
+        lowest_rate: "सर्वात कमी दर",
+        best_deal: "सर्वोत्तम डील",
+        no_charges: "कोणतेही शुल्क नाही"
     },
     ta: {
         home: "முகப்பு",
@@ -288,7 +356,24 @@ const TRANSLATIONS = {
         submit: "சமர்ப்பி",
         loading: "ஏற்றுகிறது...",
         error: "ஏதோ தவறு நடந்தது",
-        try_again: "மீண்டும் முயற்சிக்கவும்"
+        try_again: "மீண்டும் முயற்சிக்கவும்",
+
+        // Marketplace
+        page_title: "கடன் சந்தை",
+        page_subtitle: "உங்கள் தேவைகளுக்கு ஏற்ப சிறந்த கடன் சலுகைகளை ஒப்பிட்டு விண்ணப்பிக்கவும்.",
+        view_all: "அனைத்தையும் காண்க",
+        pa_onwards: "ஆண்டுக்கு",
+        max_amount: "அதிகபட்ச தொகை",
+        compare: "ஒப்பிடுக",
+        apply_now: "இப்போதே விண்ணப்பிக்கவும்",
+        compare_now: "இப்போது ஒப்பிடுக",
+        interest_rate: "வட்டி விகிதம்",
+        processing_fee: "செயலாக்கக் கட்டணம்",
+        prepayment_charges: "முன்கூட்டியே செலுத்தும் கட்டணங்கள்",
+        key_features: "முக்கிய அம்சங்கள்",
+        lowest_rate: "மிகக் குறைந்த விகிதம்",
+        best_deal: "சிறந்த சலுகை",
+        no_charges: "கட்டணங்கள் இல்லை"
     },
     kn: {
         home: "ಮನೆ",
@@ -338,7 +423,24 @@ const TRANSLATIONS = {
         submit: "ಸಲ್ಲಿಸಿ",
         loading: "ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
         error: "ಏನೋ ತಪ್ಪಾಗಿದೆ",
-        try_again: "ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ"
+        try_again: "ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
+
+        // Marketplace
+        page_title: "ಸಾಲ ಮಾರುಕಟ್ಟೆ",
+        page_subtitle: "ನಿಮ್ಮ ಅಗತ್ಯಗಳಿಗೆ ಅನುಗುಣವಾಗಿ ಉತ್ತಮ ಸಾಲದ ಕೊಡುಗೆಗಳನ್ನು ಹೋಲಿಕೆ ಮಾಡಿ ಮತ್ತು ಅರ್ಜಿ ಸಲ್ಲಿಸಿ.",
+        view_all: "ಎಲ್ಲವನ್ನೂ ವೀಕ್ಷಿಸಿ",
+        pa_onwards: "ವಾರ್ಷಿಕವಾಗಿ",
+        max_amount: "ಗರಿಷ್ಠ ಮೊತ್ತ",
+        compare: "ಹೋಲಿಕೆ ಮಾಡಿ",
+        apply_now: "ಈಗಲೇ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ",
+        compare_now: "ಈಗ ಹೋಲಿಕೆ ಮಾಡಿ",
+        interest_rate: "ಬಡ್ಡಿ ದರ",
+        processing_fee: "ಸಂಸ್ಕರಣಾ ಶುಲ್ಕ",
+        prepayment_charges: "ಮುಂಗಡ ಪಾವತಿ ಶುಲ್ಕಗಳು",
+        key_features: "ಪ್ರಮುಖ ಲಕ್ಷಣಗಳು",
+        lowest_rate: "ಅತ್ಯಂತ ಕಡಿಮೆ ದರ",
+        best_deal: "ಉತ್ತಮ ಡೀಲ್",
+        no_charges: "ಯಾವುದೇ ಶುಲ್ಕವಿಲ್ಲ"
     },
     bn: {
         home: "হোম",
@@ -388,8 +490,25 @@ const TRANSLATIONS = {
         submit: "জমা দিন",
         loading: "লোড হচ্ছে...",
         error: "কিছু ভুল হয়েছে",
-        try_again: "অনুগ্রহ করে আবার চেষ্টা করুন"
-    }
+        try_again: "অনুগ্রহ করে আবার চেষ্টা করুন",
+
+        // Marketplace
+        page_title: "লোন মার্কেটপ্লেস",
+        page_subtitle: "আপনার প্রয়োজনের জন্য সেরা লোন অফারগুলি তুলনা করুন এবং আবেদন করুন।",
+        view_all: "সব দেখুন",
+        pa_onwards: "প্রতি বছর থেকে",
+        max_amount: "সর্বাধিক পরিমাণ",
+        compare: "তুলনা করুন",
+        apply_now: "এখনই আবেদন করুন",
+        compare_now: "এখন তুলনা করুন",
+        interest_rate: "সুদের হার",
+        processing_fee: "প্রসেসিং ফি",
+        prepayment_charges: "প্রিপেমেন্ট চার্জ",
+        key_features: "মূল বৈশিষ্ট্য",
+        lowest_rate: "সর্বনিম্ন হার",
+        best_deal: "সেরা ডিল",
+        no_charges: "কোন চার্জ নেই"
+    },
 };
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

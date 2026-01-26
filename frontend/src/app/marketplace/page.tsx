@@ -6,8 +6,10 @@ import { MarketplaceSection } from "@/components/marketplace/marketplace-section
 import { ComparisonBar } from "@/components/marketplace/comparison-bar";
 import { ComparisonModal } from "@/components/marketplace/comparison-modal";
 import { loanData, categories } from "@/data/loan-marketplace";
+import { useLanguage } from "@/contexts/language-context";
 
 export default function MarketplacePage() {
+    const { t } = useLanguage();
     const [selectedLoans, setSelectedLoans] = useState<Set<string>>(new Set());
     const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
@@ -38,10 +40,10 @@ export default function MarketplacePage() {
             <main className="container mx-auto px-4 py-8 space-y-12 pb-32">
                 <div className="space-y-2">
                     <h1 className="text-3xl md:text-4xl font-serif font-bold text-foreground">
-                        Loan Marketplace
+                        {t('page_title')}
                     </h1>
                     <p className="text-muted-foreground text-lg max-w-2xl">
-                        Compare and apply for the best loan offers tailored for your needs.
+                        {t('page_subtitle')}
                     </p>
                 </div>
 
@@ -53,7 +55,7 @@ export default function MarketplacePage() {
                         return (
                             <MarketplaceSection
                                 key={category.id}
-                                title={category.title}
+                                title={category.title} // Category titles might need dynamic translation if you want to support them
                                 loans={categoryLoans}
                                 selectedLoans={selectedLoans}
                                 onToggleSelect={toggleSelect}
